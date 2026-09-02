@@ -2,26 +2,140 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------
+   Design tokens — identidade UNIT (navy + dourado) sobre plano claro.
+   Cores de série validadas com o validador de paleta (ver lib/palette.ts).
+------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* superfícies e tinta */
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --surface-3: #eef1f5;
+  --line: rgba(14, 47, 79, 0.09);
+  --line-strong: rgba(14, 47, 79, 0.16);
+  --ink: #0f1f33;
+  --ink-2: #4a5a6e;
+  --muted: #64748b; /* 4.8:1 no branco */
+
+  /* marca */
+  --navy: #0e2f4f;
+  --navy-2: #143b5e;
+  --navy-3: #1b4f7a;
+  --navy-soft: #e6edf5;
+  --gold: #f4b532;
+  --gold-2: #d89a1c;
+  --gold-soft: #fdf1d6;
+
+  /* chrome de gráfico */
+  --grid: #e8ecf1;
+  --axis: #cbd3dd;
+
+  /* séries categóricas (identidade por plataforma — ordem fixa) */
+  --s-google: #2a78d6;
+  --s-youtube: #eb6834;
+  --s-tiktok: #1baf7a;
+  --s-total: #0e2f4f;
+  --s-other: #9aa4b2;
+
+  /* rampa ordinal (uma matiz, claro → escuro) */
+  --ord-1: #86b6ef;
+  --ord-2: #5598e7;
+  --ord-3: #2a78d6;
+  --ord-4: #1c5cab;
+  --ord-5: #104281;
+
+  /* status (reservado, sempre com ícone + rótulo) */
+  --good: #0ca30c;
+  --good-text: #006300;
+  --warn: #fab219;
+  --warn-text: #b45309;
+  --serious: #ec835a;
+  --crit: #d03b3b;
+
+  --radius-card: 20px;
+  --shadow-card: 0 1px 2px rgba(14, 47, 79, 0.04), 0 8px 24px -12px rgba(14, 47, 79, 0.12);
+  --shadow-float: 0 12px 40px -12px rgba(14, 47, 79, 0.28), 0 2px 6px rgba(14, 47, 79, 0.06);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--bg);
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* números alinhados apenas onde ficam em coluna */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* scrollbar discreta em containers horizontais */
+.scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--axis) transparent;
+}
+
+/* foco visível coerente com a marca */
+:where(button, a, select, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(244, 181, 50, 0.45);
+  border-radius: 6px;
+}
+
+/* recharts: tipografia de eixos e remoção de outline nos wrappers */
+.recharts-wrapper,
+.recharts-surface {
+  outline: none;
+}
+.recharts-cartesian-axis-tick-value {
+  fill: var(--muted);
+  font-size: 11px;
+}
+.recharts-legend-item-text {
+  color: var(--ink-2) !important;
+  font-size: 12px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in {
+  animation: fade-in 220ms ease-out both;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, #eef1f5 0%, #f7f8fa 50%, #eef1f5 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .skeleton {
+    animation: none;
   }
 }

@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Unit · Medicina 2027.1 · Dashboard de mídia paga
 
-## Getting Started
+Dashboard interativo das campanhas de mídia paga (Google, YouTube e TikTok) da Universidade Tiradentes, construído em Next.js 14 (App Router), Tailwind e Recharts.
 
-First, run the development server:
+## Rodando
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build && npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> Não rode `npm run build` com o `npm run dev` aberto na mesma pasta: os dois escrevem em `.next` e um corrompe o outro.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Fonte de dados
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Os dados vêm de uma Supabase Edge Function (`Unit271`). O endpoint e a chave *publishable* têm valores padrão em `lib/config.ts` e podem ser sobrescritos por variáveis de ambiente:
 
-## Learn More
+```
+NEXT_PUBLIC_DATA_ENDPOINT=https://<projeto>.supabase.co/functions/v1/Unit271
+NEXT_PUBLIC_DATA_KEY=sb_publishable_...
+```
 
-To learn more about Next.js, take a look at the following resources:
+A chamada é feita direto do navegador (a função aceita CORS). O último payload fica em `localStorage`, então recargas são instantâneas e a atualização acontece em segundo plano (a cada 10 min ou pelo botão “Atualizado …” no cabeçalho).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Regras de negócio
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Custo = Investimento.** Todas as métricas de custo (CPM, CPC, CPV, CPE) usam a coluna `Investimento`; a coluna Spend/Cost é ignorada.
+- **MEDX.** Campanhas cujo nome contém `MEDX` formam uma campanha separada. O switch no menu alterna entre “somente MEDX” e “somente campanha comum”. Não há Google em MEDX, então a página Google é ocultada nesse modo.
+- **Métricas derivadas** (sempre calculadas sobre totais, nunca média de linhas):
+  - CPM = Investimento ÷ Impressões × 1.000 · CPC = Investimento ÷ Cliques · CTR = Cliques ÷ Impressões
+  - CPV = Investimento ÷ Visualizações · VTR = Visualizações ÷ Impressões (YouTube: TrueView; TikTok: views de 2 s)
+  - CPE = Investimento ÷ Engajamentos (Google/YouTube) · Conclusão = Views 100% ÷ Visualizações
+  - YouTube reporta *taxas* de quartil; convertemos em contagens (taxa × impressões) por linha antes de somar.
+- **Metas** (página Progresso de Metas) têm valores padrão em `lib/goals.ts` e são editáveis na interface (ficam salvas no navegador). O ritmo esperado é linear sobre o período configurado.
 
-## Deploy on Vercel
+## Estrutura
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/                páginas (visão geral, google, youtube, tiktok, criativos, metas)
+components/layout   sidebar flutuante, cabeçalho, seletor de período, switch MEDX
+components/charts   série temporal, barras, participação, funil, retenção, agrupadas
+components/tables   tabela ordenável
+components/pages    página genérica de plataforma, grade de KPIs, tabela diária
+components/creatives, components/goals, components/insights
+lib/                normalização, métricas, datas, formatação, metas, criativos, insights, paleta
+store/              contexto global (dados, período, MEDX, metas)
+```
