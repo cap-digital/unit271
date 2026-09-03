@@ -1,10 +1,11 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fmtDayLong, fmtDay } from "@/lib/dates";
 import { fmtValue, makeAxisFormatter, type ValueFormat } from "@/lib/format";
 import { CHART_CHROME } from "@/lib/palette";
 import { TooltipBox } from "./ChartTooltip";
+import { makePointLabel } from "./DataLabel";
 
 export interface SeriesDef {
   key: string;
@@ -30,7 +31,7 @@ interface TimeSeriesChartProps {
 /** Altura padrão dos gráficos: acompanha a viewport (bom em 1366×768) com piso e teto. */
 export const CHART_H = "h-[25vh] min-h-[168px] max-h-[300px]";
 
-const margin = { top: 12, right: 12, bottom: 4, left: 0 };
+const margin = { top: 22, right: 14, bottom: 4, left: 0 };
 
 /** Linha (ou área para série única) com crosshair + tooltip com todas as séries no X. */
 export function TimeSeriesChart({ data, series, format, height, fill = false }: TimeSeriesChartProps) {
@@ -41,6 +42,40 @@ export function TimeSeriesChart({ data, series, format, height, fill = false }: 
     if (typeof v === "number" && Math.abs(v) > maxAbs) maxAbs = Math.abs(v);
   }
   const yTick = makeAxisFormatter(format, maxAbs);
+  // Em períodos longos os rótulos são exibidos a cada N pontos para não se sobrepor.
+  const labelStep = Math.max(1, Math.ceil(data.length / 12));
+  /**
+   * Com várias séries, dois valores próximos gerariam rótulos empilhados. Em cada dia
+   * os valores são ordenados e alocados acima/abaixo do ponto; o terceiro rótulo muito
+   * próximo é omitido (o valor continua no tooltip e na visão em tabela).
+   */
+  const gap = maxAbs * 0.09;
+  const offsets = new Map<string, (number | null)[]>(series.map((s) => [s.key, []]));
+  data.forEach((row, i) => {
+    const entries = series
+      .map((s) => ({ key: s.key, v: typeof row[s.key] === "number" ? (row[s.key] as number) : null }))
+      .filter((e): e is { key: string; v: number } => e.v !== null)
+      .sort((a, b) => b.v - a.v);
+    let lastAbove: number | null = null;
+    let lastBelow: number | null = null;
+    for (const e of entries) {
+      const nearAxis = maxAbs > 0 && e.v < maxAbs * 0.12; // abaixo daqui o rótulo bateria no eixo X
+      if (lastAbove === null || lastAbove - e.v >= gap) {
+        offsets.get(e.key)![i] = -10;
+        lastAbove = e.v;
+      } else if (!nearAxis && (lastBelow === null || lastBelow - e.v >= gap)) {
+        offsets.get(e.key)![i] = 17;
+        lastBelow = e.v;
+      } else {
+        offsets.get(e.key)![i] = null;
+      }
+    }
+  });
+  // null = rótulo omitido de propósito; undefined = série sem entrada nesse índice
+  const dyAtFor = (key: string) => (i: number) => {
+    const stored = offsets.get(key)?.[i];
+    return stored === undefined ? -10 : stored;
+  };
   const tooltip = (
     <Tooltip
       cursor={{ stroke: CHART_CHROME.axis, strokeWidth: 1 }}
@@ -86,7 +121,9 @@ export function TimeSeriesChart({ data, series, format, height, fill = false }: 
               dot={{ r: 4, strokeWidth: 2, stroke: CHART_CHROME.surface, fill: series[0].color }}
               activeDot={{ r: 5, strokeWidth: 2, stroke: CHART_CHROME.surface }}
               isAnimationActive={false}
-            />
+            >
+              <LabelList dataKey={series[0].key} content={makePointLabel({ format: yTick, step: labelStep, count: data.length })} />
+            </Area>
           </AreaChart>
         ) : (
           <LineChart data={data} margin={margin}>
@@ -106,7 +143,10 @@ export function TimeSeriesChart({ data, series, format, height, fill = false }: 
                 dot={{ r: 4, strokeWidth: 2, stroke: CHART_CHROME.surface, fill: s.color }}
                 activeDot={{ r: 5, strokeWidth: 2, stroke: CHART_CHROME.surface }}
                 isAnimationActive={false}
-              />
+              >
+                {/* séries alternam acima/abaixo do ponto: linhas que se cruzam não empilham rótulos */}
+                <LabelList dataKey={s.key} content={makePointLabel({ format: yTick, step: labelStep, dyAt: dyAtFor(s.key), count: data.length })} />
+              </Line>
             ))}
           </LineChart>
         )}

@@ -1,9 +1,10 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fmtValue, makeAxisFormatter, type ValueFormat } from "@/lib/format";
 import { CHART_CHROME } from "@/lib/palette";
 import { TooltipBox } from "./ChartTooltip";
+import { makeBarLabel } from "./DataLabel";
 
 export interface GroupedSeries {
   key: string;
@@ -43,7 +44,7 @@ export function GroupedBarChart({ data, series, format, height, stacked = false 
   return (
     <div style={height ? { height } : undefined} className={`w-full ${height ? "" : CHART_H}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }} barCategoryGap="28%" barGap={2}>
+        <BarChart data={data} margin={{ top: 20, right: 8, bottom: 4, left: 0 }} barCategoryGap="28%" barGap={2}>
           <CartesianGrid vertical={false} stroke={CHART_CHROME.grid} />
           <XAxis dataKey="category" tickLine={false} axisLine={{ stroke: CHART_CHROME.axis }} dy={6} />
           <YAxis tickFormatter={yTick} tickLine={false} axisLine={false} width={56} domain={[0, "auto"]} />
@@ -70,7 +71,10 @@ export function GroupedBarChart({ data, series, format, height, stacked = false 
               stroke={stacked ? CHART_CHROME.surface : undefined}
               strokeWidth={stacked ? 2 : 0}
               isAnimationActive={false}
-            />
+            >
+              {/* rótulo compacto no topo da barra; barras zeradas ficam sem rótulo */}
+              {!stacked && <LabelList dataKey={s.key} content={makeBarLabel({ format: yTick })} />}
+            </Bar>
           ))}
         </BarChart>
       </ResponsiveContainer>
