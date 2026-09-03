@@ -71,7 +71,7 @@ export default function CreativesPage() {
       <Card>
         <EmptyState
           title="Sem criativos no período selecionado"
-          description={`Não há registros ${medx ? "da campanha MEDX" : "da campanha comum"} entre ${fmtDay(resolved.start)} e ${fmtDay(resolved.end)}.`}
+          description={`Não há registros ${medx ? "da campanha MEDX" : "da campanha 27.1"} entre ${fmtDay(resolved.start)} e ${fmtDay(resolved.end)}.`}
         />
       </Card>
     );

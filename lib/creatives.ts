@@ -57,7 +57,8 @@ export function previewFor(platform: Platform, url: string | null): Preview {
       thumbUrl: thumb,
       thumbCandidates: [thumb],
       embedUrl: `https://drive.google.com/file/d/${dv}/preview`,
-      openUrl: url,
+      // Sem link externo: a prévia fica no próprio dashboard, sem levar o usuário ao Drive.
+      openUrl: null,
       vertical: false,
     };
   }

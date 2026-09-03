@@ -14,8 +14,8 @@ export const DATA_KEY =
 /** Corpo enviado à função (é o que o endpoint espera). */
 export const DATA_BODY = { name: "Functions" };
 
-/** Tempo máximo de espera pela API (o cold start já chegou a ~35 s). */
-export const FETCH_TIMEOUT_MS = 90_000;
+/** Tempo máximo de espera pela API (a carga fria já levou ~75 s). */
+export const FETCH_TIMEOUT_MS = 180_000;
 
 /** Intervalo de atualização automática em segundo plano. */
 export const AUTO_REFRESH_MS = 10 * 60 * 1000;
@@ -27,5 +27,4 @@ export const STORAGE_KEYS = {
   data: "unit271:data:v1",
   medx: "unit271:medx:v1",
   range: "unit271:range:v1",
-  goals: "unit271:goals:v1",
 } as const;

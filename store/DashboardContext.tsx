@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AUTO_REFRESH_MS, DATA_BODY, DATA_ENDPOINT, DATA_KEY, FETCH_TIMEOUT_MS, STORAGE_KEYS } from "@/lib/config";
 import { DEFAULT_RANGE, previousRange, resolveRange, todayISO, type DateRange, type ResolvedRange } from "@/lib/dates";
-import { DEFAULT_GOALS, sanitizeGoals, type GoalsConfig, type PlatformGoal } from "@/lib/goals";
+import { GOALS, type CampaignGoals } from "@/lib/goals";
 import { normalizePayload } from "@/lib/normalize";
 import type { Dataset, Platform, RawPayload, Row } from "@/lib/types";
 
@@ -13,9 +13,9 @@ export interface DashboardContextValue {
   status: LoadStatus;
   error: string | null;
   dataset: Dataset | null;
-  /** Todas as linhas (comum + MEDX). */
+  /** Todas as linhas (27.1 + MEDX). */
   rows: Row[];
-  /** Linhas do modo ativo (MEDX ou comum). */
+  /** Linhas do modo ativo (MEDX ou 27.1). */
   scopedRows: Row[];
   /** Linhas do modo ativo dentro do intervalo de datas. */
   filteredRows: Row[];
@@ -37,11 +37,8 @@ export interface DashboardContextValue {
 
   refresh: () => Promise<void>;
 
-  goals: GoalsConfig;
-  setGoals: (g: GoalsConfig) => void;
-  resetGoals: () => void;
-  /** Metas do modo ativo. */
-  activeGoals: Partial<Record<Platform, PlatformGoal>>;
+  /** Metas e período contratados do modo ativo (MEDX ou campanha 27.1). */
+  activeGoals: CampaignGoals;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -93,7 +90,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [medx, setMedxState] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [range, setRangeState] = useState<DateRange>(DEFAULT_RANGE);
-  const [goals, setGoalsState] = useState<GoalsConfig>(DEFAULT_GOALS);
   const [today, setToday] = useState(() => todayISO());
   const inFlight = useRef<AbortController | null>(null);
   const datasetRef = useRef<Dataset | null>(null);
@@ -139,9 +135,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (typeof savedMedx === "boolean") setMedxState(savedMedx);
     const savedRange = readStorage<DateRange>(STORAGE_KEYS.range);
     if (savedRange && typeof savedRange.preset === "string") setRangeState(savedRange);
-    const savedGoals = readStorage<unknown>(STORAGE_KEYS.goals);
-    if (savedGoals) setGoalsState(sanitizeGoals(savedGoals));
-
     const cached = readStorage<CachedData>(STORAGE_KEYS.data);
     if (cached?.payload) {
       const hydrated = normalizePayload(cached.payload, cached.fetchedAt);
@@ -183,21 +176,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     writeStorage(STORAGE_KEYS.range, r);
   }, []);
 
-  const setGoals = useCallback((g: GoalsConfig) => {
-    const clean = sanitizeGoals(g);
-    setGoalsState(clean);
-    writeStorage(STORAGE_KEYS.goals, clean);
-  }, []);
-
-  const resetGoals = useCallback(() => {
-    setGoalsState(DEFAULT_GOALS);
-    try {
-      window.localStorage.removeItem(STORAGE_KEYS.goals);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
   const refresh = useCallback(() => load("refresh"), [load]);
 
   const rows = useMemo(() => dataset?.rows ?? [], [dataset]);
@@ -219,7 +197,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const filteredRows = useMemo(() => scopedRows.filter((r) => r.date >= resolved.start && r.date <= resolved.end), [scopedRows, resolved]);
   const previousRows = useMemo(() => scopedRows.filter((r) => r.date >= previous.start && r.date <= previous.end), [scopedRows, previous]);
 
-  const activeGoals = medx ? goals.medx : goals.normal;
+  const activeGoals = medx ? GOALS.medx : GOALS.normal;
 
   const value: DashboardContextValue = {
     status,
@@ -240,9 +218,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     resolved,
     previous,
     refresh,
-    goals,
-    setGoals,
-    resetGoals,
     activeGoals,
   };
 

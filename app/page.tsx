@@ -15,7 +15,6 @@ import { ShareBars } from "@/components/charts/ShareBars";
 import { TimeSeriesChart } from "@/components/charts/TimeSeriesChart";
 import { InsightsCard } from "@/components/insights/InsightsCard";
 import { PageGrid } from "@/components/layout/PageGrid";
-import { DailyTable } from "@/components/pages/DailyTable";
 import { KpiGrid } from "@/components/pages/KpiGrid";
 import { DataTable, type Column } from "@/components/tables/DataTable";
 import { PlatformBadge, SeriesKey } from "@/components/ui/Badge";
@@ -27,7 +26,6 @@ import { Segmented } from "@/components/ui/Segmented";
 const KPI_KEYS: MetricKey[] = ["investment", "impressions", "clicks", "views"];
 const SHARE_KEYS: MetricKey[] = ["investment", "impressions", "clicks", "views"];
 const TABLE_KEYS: MetricKey[] = ["investment", "impressions", "clicks", "views", "cpm", "cpc", "ctr", "vtr", "cpv"];
-const DAILY_KEYS: MetricKey[] = ["investment", "impressions", "clicks", "views", "cpm", "cpc", "ctr", "vtr"];
 
 interface PlatformRow {
   platform: Platform;
@@ -79,7 +77,7 @@ export default function OverviewPage() {
       <Card>
         <EmptyState
           title="Sem dados para o período selecionado"
-          description={`Não há registros ${medx ? "da campanha MEDX" : "da campanha comum"} entre ${fmtDay(resolved.start)} e ${fmtDay(resolved.end)}. Ajuste o período no seletor acima.`}
+          description={`Não há registros ${medx ? "da campanha MEDX" : "da campanha 27.1"} entre ${fmtDay(resolved.start)} e ${fmtDay(resolved.end)}. Ajuste o período no seletor acima.`}
         />
       </Card>
     );
@@ -195,7 +193,6 @@ export default function OverviewPage() {
         <DataTable columns={platformColumns} rows={platformRows} rowKey={(r) => r.platform} initialSort={{ key: "investment", dir: "desc" }} footer={platformFooter} />
       </Card>
 
-      <DailyTable rows={filteredRows} keys={DAILY_KEYS} today={today} className="lg:col-span-12" />
     </PageGrid>
   );
 }

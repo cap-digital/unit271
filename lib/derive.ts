@@ -58,19 +58,15 @@ export interface Stage {
   noStep?: boolean;
 }
 
-/** Estágios do funil por plataforma (ordem monotônica garantida pelos dados de origem). */
-export function funnelStages(t: Totals, platform: Platform | "all"): Stage[] {
+/**
+ * Estágios do funil (ordem monotônica garantida pelos dados de origem).
+ * O Google não tem funil: cliques e engajamentos são interações de naturezas
+ * diferentes, então a página mostra a tabela de anúncios no lugar.
+ */
+export function funnelStages(t: Totals, platform: "youtube" | "tiktok" | "all"): Stage[] {
   switch (platform) {
-    case "google":
-      // Engajamentos são outro tipo de interação, não um subconjunto dos cliques:
-      // ficam fora do funil (seguem na tabela diária e no seletor de métricas).
-      return [
-        { label: "Impressões", value: t.impressions },
-        { label: "Cliques", value: t.clicks },
-      ];
     case "youtube":
       return [
-        { label: "Impressões", value: t.impressions },
         { label: "Assistiu 25%", value: t.p25, hint: "Impressões que chegaram a 25% do vídeo" },
         { label: "Assistiu 50%", value: t.p50 },
         { label: "Assistiu 75%", value: t.p75 },
@@ -78,9 +74,7 @@ export function funnelStages(t: Totals, platform: Platform | "all"): Stage[] {
       ];
     case "tiktok":
       return [
-        { label: "Impressões", value: t.impressions },
-        { label: "Views 2 s", value: t.views },
-        { label: "Views 6 s", value: t.views6s },
+        { label: "Views 2 s", value: t.views, hint: "Visualizações de 2 segundos" },
         { label: "Assistiu 25%", value: t.p25 },
         { label: "Assistiu 50%", value: t.p50 },
         { label: "Assistiu 75%", value: t.p75 },

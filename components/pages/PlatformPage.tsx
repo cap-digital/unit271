@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { groupCreatives, type CreativeGroup } from "@/lib/creatives";
 import { eachDay, fmtDay, fmtDayLong } from "@/lib/dates";
-import { AGE_ORDER, ageSort, buildKpis, funnelStages, genderSort, retentionPoints, totalSeries } from "@/lib/derive";
+import { ageSort, buildKpis, funnelStages, genderSort, retentionPoints, totalSeries } from "@/lib/derive";
 import { fmtPct, fmtValue } from "@/lib/format";
 import { buildInsights } from "@/lib/insights";
-import { aggregate, groupBy, METRICS, metricValue, metricsFor, type Group, type MetricKey, type Totals } from "@/lib/metrics";
+import { aggregate, groupBy, METRICS, metricValue, metricsFor, type MetricKey, type Totals } from "@/lib/metrics";
 import { ageLabel, genderLabel } from "@/lib/normalize";
 import { GENDER_COLOR, PLATFORM_COLOR } from "@/lib/palette";
 import { PLATFORM_LABEL, type Platform } from "@/lib/types";
@@ -31,7 +31,7 @@ import { MetricSelect, SimpleSelect } from "@/components/ui/MetricSelect";
 
 const KPI_KEYS: Record<Platform, MetricKey[]> = {
   google: ["investment", "impressions", "clicks", "ctr"],
-  youtube: ["investment", "impressions", "clicks", "views"],
+  youtube: ["investment", "impressions", "engagements", "views"],
   tiktok: ["investment", "impressions", "clicks", "views"],
 };
 
@@ -47,42 +47,9 @@ const CREATIVE_TABLE_KEYS: Record<Platform, MetricKey[]> = {
   tiktok: ["investment", "impressions", "views", "vtr", "cpm", "clicks", "ctr"],
 };
 
-const AGE_TABLE_KEYS: MetricKey[] = ["investment", "impressions", "views", "vtr", "cpm", "clicks", "ctr"];
-
 interface CreativeRow {
   group: CreativeGroup;
   totals: Totals;
-}
-
-type AgeGroup = Group<string>;
-
-function ageColumns(totals: Totals): Column<AgeGroup>[] {
-  return [
-    {
-      key: "age",
-      label: "Faixa etária",
-      sortValue: (r) => {
-        const i = AGE_ORDER.indexOf(r.key);
-        return i === -1 ? 99 : i;
-      },
-      render: (r) => <span className="font-medium text-ink">{r.label}</span>,
-    },
-    {
-      key: "share",
-      label: "% impressões",
-      align: "right",
-      sortValue: (r) => r.totals.impressions,
-      render: (r) => fmtPct(totals.impressions > 0 ? r.totals.impressions / totals.impressions : null, 1),
-    },
-    ...AGE_TABLE_KEYS.map<Column<AgeGroup>>((k) => ({
-      key: k,
-      label: METRICS[k].short,
-      align: "right",
-      description: METRICS[k].description,
-      sortValue: (r) => metricValue(k, r.totals),
-      render: (r) => fmtValue(metricValue(k, r.totals), METRICS[k].format),
-    })),
-  ];
 }
 
 export function PlatformPage({ platform }: { platform: Platform }) {
@@ -141,7 +108,7 @@ export function PlatformPage({ platform }: { platform: Platform }) {
       <Card>
         <EmptyState
           title="Google não faz parte da campanha MEDX"
-          description="A campanha MEDX roda apenas em YouTube e TikTok. Desative o switch MEDX no menu para ver a campanha comum do Google."
+          description="A campanha MEDX roda apenas em YouTube e TikTok. Desative o switch MEDX no menu para ver o Google na campanha 27.1."
           action={
             <Link href="/" className="inline-flex h-9 items-center rounded-full bg-navy px-4 text-[13px] font-semibold text-white hover:bg-navy-2">
               Ir para a visão geral
@@ -157,13 +124,13 @@ export function PlatformPage({ platform }: { platform: Platform }) {
       <Card>
         <EmptyState
           title={`Sem dados de ${PLATFORM_LABEL[platform]} no período`}
-          description={`Não há registros ${medx ? "da campanha MEDX" : "da campanha comum"} entre ${fmtDay(resolved.start)} e ${fmtDay(resolved.end)}. Ajuste o período no seletor acima.`}
+          description={`Não há registros ${medx ? "da campanha MEDX" : "da campanha 27.1"} entre ${fmtDay(resolved.start)} e ${fmtDay(resolved.end)}. Ajuste o período no seletor acima.`}
         />
       </Card>
     );
   }
 
-  const stages = funnelStages(totals, platform);
+  const stages = platform === "google" ? null : funnelStages(totals, platform);
   const seriesFormat = METRICS[seriesMetric].format;
 
   const creativeColumns: Column<CreativeRow>[] = [
@@ -201,177 +168,232 @@ export function PlatformPage({ platform }: { platform: Platform }) {
     .map((c) => ({ label: c.group.title.length > 34 ? `${c.group.title.slice(0, 32)}…` : c.group.title, value: metricValue(breakdownMetric, c.totals), hint: c.group.ad }))
     .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
 
-  return (
-    <PageGrid>
-      <div className="flex flex-wrap items-center gap-2 px-1 lg:col-span-12">
-        <Badge variant="navy">{PLATFORM_LABEL[platform]}</Badge>
-        {campaigns.map((c) => (
-          <Badge key={c} variant="outline" className="max-w-full truncate">
-            {c}
-          </Badge>
-        ))}
-        {adGroups.map((g) => (
-          <Badge key={g} variant="muted" className="max-w-full truncate">
-            {g}
-          </Badge>
-        ))}
-      </div>
+  const hasRetention = !!(retention && retention.series.length > 0);
+  const hasAudience = !!(audience && audience.ages.length > 0);
 
+  const badges = (
+    <div className="flex flex-wrap items-center gap-2 px-1 lg:col-span-12">
+      <Badge variant="navy">{PLATFORM_LABEL[platform]}</Badge>
+      {campaigns.map((c) => (
+        <Badge key={c} variant="outline" className="max-w-full truncate">
+          {c}
+        </Badge>
+      ))}
+      {adGroups.map((g) => (
+        <Badge key={g} variant="muted" className="max-w-full truncate">
+          {g}
+        </Badge>
+      ))}
+    </div>
+  );
+
+  const funnelCard = stages && (
+    <ChartCard
+      title="Funil de vídeo"
+      className="lg:col-span-5"
+      subtitle={
+        platform === "youtube"
+          ? "Quantas visualizações chegaram a cada quartil do vídeo."
+          : "Views de 2 s até os quartis do vídeo."
+      }
+      table={{
+        columns: [
+          { key: "stage", label: "Etapa" },
+          { key: "value", label: "Volume", align: "right" },
+          { key: "share", label: "% do topo", align: "right" },
+        ],
+        rows: stages.map((s) => ({ stage: s.label, value: fmtValue(s.value, "int"), share: fmtValue(stages[0].value > 0 ? s.value / stages[0].value : null, "pct") })),
+      }}
+    >
+      <FunnelChart stages={stages} />
+    </ChartCard>
+  );
+
+  /** No Google a tabela de Desempenho diário fica ao lado, então o gráfico dispensa a visão em tabela. */
+  const evolutionCard = (span: string, withTable: boolean, fill = false) => (
+    <ChartCard
+      title="Evolução diária"
+      subtitle={`Métrica selecionada por dia para ${PLATFORM_LABEL[platform]}.`}
+      className={span}
+      maxBodyHeight={fill ? "none" : undefined}
+      controls={<MetricSelect value={seriesMetric} onChange={setSeriesMetric} options={options} />}
+      table={
+        withTable
+          ? {
+              columns: [
+                { key: "date", label: "Dia" },
+                { key: "total", label: METRICS[seriesMetric].label, align: "right" },
+              ],
+              rows: seriesData.map((p) => ({ date: fmtDayLong(p.date), total: fmtValue(p.total as number | null, seriesFormat) })),
+            }
+          : undefined
+      }
+    >
+      {days.length < 2 ? (
+        <EmptyState compact title="Período de um único dia" description="Amplie o período para ver a evolução diária." />
+      ) : (
+        <TimeSeriesChart data={seriesData} series={seriesDef} format={seriesFormat} fill={fill} />
+      )}
+    </ChartCard>
+  );
+
+  const creativesCard = (span: string, fill = false) => (
+    <Card title={platform === "youtube" ? "Vídeos" : "Anúncios"} subtitle="Clique no criativo para ver a prévia. Ordene pelas colunas." className={span}>
+      <DataTable
+        columns={creativeColumns}
+        rows={creatives}
+        rowKey={(r) => r.group.id}
+        initialSort={{ key: "investment", dir: "desc" }}
+        footer={creativeFooter}
+        maxHeight={fill ? "none" : undefined}
+      />
+    </Card>
+  );
+
+  const dailyCard = (span: string, fill = false) => (
+    <DailyTable rows={rows} keys={DAILY_KEYS[platform]} today={today} className={span} maxHeight={fill ? "none" : undefined} />
+  );
+
+  const breakdownCard = (span: string) =>
+    creatives.length > 1 ? (
+      <ChartCard
+        title={platform === "youtube" ? "Comparativo entre vídeos" : "Comparativo entre anúncios"}
+        subtitle="Escolha a métrica para ranquear os criativos desta plataforma."
+        className={span}
+        controls={<MetricSelect value={breakdownMetric} onChange={setBreakdownMetric} options={options} />}
+        table={{
+          columns: [
+            { key: "label", label: "Criativo" },
+            { key: "value", label: METRICS[breakdownMetric].label, align: "right" },
+          ],
+          rows: breakdownData.map((d) => ({ label: d.label, value: fmtValue(d.value, METRICS[breakdownMetric].format) })),
+        }}
+      >
+        <BarBreakdownChart data={breakdownData} format={METRICS[breakdownMetric].format} valueLabel={METRICS[breakdownMetric].label} />
+      </ChartCard>
+    ) : null;
+
+  const retentionCard = hasRetention && retention && (
+    <ChartCard
+      title="Curva de retenção por vídeo"
+      subtitle="Parcela das impressões que segue assistindo em cada quartil. O selecionado fica em destaque; a média em azul-marinho."
+      className="lg:col-span-7"
+      controls={
+        <SimpleSelect
+          label="Vídeo em destaque"
+          value={effectiveHighlight ?? ""}
+          onChange={(v) => setHighlight(v)}
+          options={retention.series.map((s) => ({ key: s.key, label: s.label }))}
+        />
+      }
+      legend={
+        <>
+          <SeriesKey color={PLATFORM_COLOR.youtube} label="Selecionado" />
+          <SeriesKey color="#0e2f4f" label="Média" />
+          <SeriesKey color="#c9d1db" label="Outros vídeos" />
+        </>
+      }
+      table={{
+        columns: [
+          { key: "video", label: "Vídeo" },
+          { key: "p25", label: "25%", align: "right" },
+          { key: "p50", label: "50%", align: "right" },
+          { key: "p75", label: "75%", align: "right" },
+          { key: "p100", label: "100%", align: "right" },
+        ],
+        rows: [
+          ...retention.series.map((s) => ({ video: s.label, p25: fmtPct(s.points[1], 1), p50: fmtPct(s.points[2], 1), p75: fmtPct(s.points[3], 1), p100: fmtPct(s.points[4], 1) })),
+          { video: "Média", p25: fmtPct(retention.avg[1], 1), p50: fmtPct(retention.avg[2], 1), p75: fmtPct(retention.avg[3], 1), p100: fmtPct(retention.avg[4], 1) },
+        ],
+      }}
+    >
+      <RetentionChart series={retention.series} highlightKey={effectiveHighlight} highlightColor={PLATFORM_COLOR.youtube} average={retention.avg} />
+    </ChartCard>
+  );
+
+  const audienceCard = (span: string) =>
+    hasAudience && audience ? (
+    <ChartCard
+      title="Público por faixa etária e gênero"
+      subtitle="Dimensões de audiência reportadas pelo TikTok. Escolha a métrica para comparar os segmentos."
+      className={span}
+      controls={<MetricSelect value={audienceMetric} onChange={setAudienceMetric} options={options} />}
+      legend={
+        <>
+          {audience.series.map((s) => (
+            <SeriesKey key={s.key} color={s.color} label={s.label} kind="rect" />
+          ))}
+          {audience.genderTotals.map((g) => (
+            <span key={g.key} className="text-[11px] text-muted">
+              {g.label}: <strong className="tnum font-semibold text-ink-2">{fmtPct(totals.impressions > 0 ? g.totals.impressions / totals.impressions : null, 1)}</strong> das impressões
+            </span>
+          ))}
+        </>
+      }
+      table={{
+        columns: [{ key: "category", label: "Faixa" }, ...audience.series.map((s) => ({ key: s.key, label: s.label, align: "right" as const }))],
+        rows: audience.data.map((d) => {
+          const row: Record<string, string> = { category: String(d.category) };
+          for (const s of audience.series) row[s.key] = fmtValue(d[s.key] as number | null, METRICS[audienceMetric].format);
+          return row;
+        }),
+      }}
+    >
+      <GroupedBarChart data={audience.data as { category: string; [k: string]: number | null | string }[]} series={audience.series} format={METRICS[audienceMetric].format} />
+    </ChartCard>
+    ) : null;
+
+  // O Google tem menos cards que as outras páginas: a grade estica para terminar
+  // na mesma altura do sidebar, em vez de deixar um vazio embaixo.
+  const gridClass = platform === "google" ? "lg:flex-1 lg:grid-rows-[auto_auto_minmax(180px,0.85fr)_minmax(220px,1fr)]" : "";
+
+  return (
+    <PageGrid className={gridClass}>
+      {badges}
       <KpiGrid
         className="lg:col-span-12"
         kpis={kpis}
-        hints={platform === "tiktok" ? { views: "Views de 2 s" } : platform === "youtube" ? { views: "TrueView" } : undefined}
+        hints={
+          platform === "tiktok"
+            ? { views: "Views de 2 s" }
+            : platform === "youtube"
+              ? { views: "TrueView", engagements: "Interações no anúncio" }
+              : undefined
+        }
+      />
+      <InsightsCard
+        insights={insights}
+        className={platform === "google" ? "lg:col-span-5" : "lg:col-span-7"}
+        maxBodyHeight={platform === "google" ? "none" : undefined}
+        singleColumn={platform === "google"}
       />
 
-      <InsightsCard insights={insights} className="lg:col-span-7" />
-
-      <ChartCard
-        title={platform === "google" ? "Funil de cliques" : "Funil de vídeo"}
-        className="lg:col-span-5"
-        subtitle={
-          platform === "google"
-            ? "Impressões → cliques → engajamentos."
-            : platform === "youtube"
-              ? "Quantas impressões chegaram a 25 / 50 / 75 / 100% do vídeo."
-              : "Impressões → views de 2 s → 6 s → quartis do vídeo."
-        }
-        table={{
-          columns: [
-            { key: "stage", label: "Etapa" },
-            { key: "value", label: "Volume", align: "right" },
-            { key: "share", label: "% do topo", align: "right" },
-          ],
-          rows: stages.map((s) => ({ stage: s.label, value: fmtValue(s.value, "int"), share: fmtValue(stages[0].value > 0 ? s.value / stages[0].value : null, "pct") })),
-        }}
-      >
-        <FunnelChart stages={stages} />
-      </ChartCard>
-
-      <ChartCard
-        title="Evolução diária"
-        subtitle={`Métrica selecionada por dia para ${PLATFORM_LABEL[platform]}.`}
-        className="lg:col-span-12"
-        controls={<MetricSelect value={seriesMetric} onChange={setSeriesMetric} options={options} />}
-        table={{
-          columns: [
-            { key: "date", label: "Dia" },
-            { key: "total", label: METRICS[seriesMetric].label, align: "right" },
-          ],
-          rows: seriesData.map((p) => ({ date: fmtDayLong(p.date), total: fmtValue(p.total as number | null, seriesFormat) })),
-        }}
-      >
-        {days.length < 2 ? (
-          <EmptyState compact title="Período de um único dia" description="Amplie o período para ver a evolução diária." />
-        ) : (
-          <TimeSeriesChart data={seriesData} series={seriesDef} format={seriesFormat} />
-        )}
-      </ChartCard>
-
-      {retention && retention.series.length > 0 && (
-        <ChartCard
-          title="Curva de retenção por vídeo"
-          subtitle="Parcela das impressões que segue assistindo em cada quartil. O selecionado fica em destaque; a média em azul-marinho."
-          className="lg:col-span-7"
-          controls={
-            <SimpleSelect
-              label="Vídeo em destaque"
-              value={effectiveHighlight ?? ""}
-              onChange={(v) => setHighlight(v)}
-              options={retention.series.map((s) => ({ key: s.key, label: s.label }))}
-            />
-          }
-          legend={
-            <>
-              <SeriesKey color={PLATFORM_COLOR.youtube} label="Selecionado" />
-              <SeriesKey color="#0e2f4f" label="Média" />
-              <SeriesKey color="#c9d1db" label="Outros vídeos" />
-            </>
-          }
-          table={{
-            columns: [
-              { key: "video", label: "Vídeo" },
-              { key: "p25", label: "25%", align: "right" },
-              { key: "p50", label: "50%", align: "right" },
-              { key: "p75", label: "75%", align: "right" },
-              { key: "p100", label: "100%", align: "right" },
-            ],
-            rows: [
-              ...retention.series.map((s) => ({ video: s.label, p25: fmtPct(s.points[1], 1), p50: fmtPct(s.points[2], 1), p75: fmtPct(s.points[3], 1), p100: fmtPct(s.points[4], 1) })),
-              { video: "Média", p25: fmtPct(retention.avg[1], 1), p50: fmtPct(retention.avg[2], 1), p75: fmtPct(retention.avg[3], 1), p100: fmtPct(retention.avg[4], 1) },
-            ],
-          }}
-        >
-          <RetentionChart series={retention.series} highlightKey={effectiveHighlight} highlightColor={PLATFORM_COLOR.youtube} average={retention.avg} />
-        </ChartCard>
-      )}
-
-      {audience && audience.ages.length > 0 && (
+      {platform === "google" ? (
         <>
-          <ChartCard
-            title="Público por faixa etária e gênero"
-            subtitle="Dimensões de audiência reportadas pelo TikTok. Escolha a métrica para comparar os segmentos."
-            className="lg:col-span-7"
-            controls={<MetricSelect value={audienceMetric} onChange={setAudienceMetric} options={options} />}
-            legend={audience.series.map((s) => (
-              <SeriesKey key={s.key} color={s.color} label={s.label} kind="rect" />
-            ))}
-            table={{
-              columns: [{ key: "category", label: "Faixa" }, ...audience.series.map((s) => ({ key: s.key, label: s.label, align: "right" as const }))],
-              rows: audience.data.map((d) => {
-                const row: Record<string, string> = { category: String(d.category) };
-                for (const s of audience.series) row[s.key] = fmtValue(d[s.key] as number | null, METRICS[audienceMetric].format);
-                return row;
-              }),
-            }}
-          >
-            <GroupedBarChart data={audience.data as { category: string; [k: string]: number | null | string }[]} series={audience.series} format={METRICS[audienceMetric].format} />
-          </ChartCard>
-
-          <Card title="Faixas etárias em detalhe" subtitle="Participação nas impressões e eficiência por faixa. Ordene clicando no cabeçalho." className="lg:col-span-12">
-            <DataTable
-              columns={ageColumns(totals)}
-              rows={audience.ages}
-              rowKey={(r) => r.key}
-              initialSort={{ key: "share", dir: "desc" }}
-              footer={Object.fromEntries([["age", "Total"], ["share", "100%"], ...AGE_TABLE_KEYS.map((k) => [k, fmtValue(metricValue(k, totals), METRICS[k].format)])])}
-              dense
-             
-            />
-            <div className="mt-3 flex flex-wrap gap-2">
-              {audience.genderTotals.map((g) => (
-                <span key={g.key} className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[12px] text-ink-2">
-                  <span className="h-2 w-2 rounded-full" style={{ background: GENDER_COLOR[g.key] ?? GENDER_COLOR.NONE }} aria-hidden />
-                  {g.label}: <strong className="tnum font-semibold text-ink">{fmtPct(totals.impressions > 0 ? g.totals.impressions / totals.impressions : null, 1)}</strong> das impressões
-                </span>
-              ))}
-            </div>
-          </Card>
+          {creativesCard("lg:col-span-7", true)}
+          {evolutionCard("lg:col-span-7", false, true)}
+          {dailyCard("lg:col-span-5", true)}
+          {breakdownCard("lg:col-span-12")}
+        </>
+      ) : platform === "youtube" ? (
+        <>
+          {funnelCard}
+          {evolutionCard("lg:col-span-12", true)}
+          {breakdownCard(hasRetention ? "lg:col-span-5" : "lg:col-span-12")}
+          {retentionCard}
+          {creativesCard("lg:col-span-7")}
+          {dailyCard("lg:col-span-5")}
+        </>
+      ) : (
+        <>
+          {funnelCard}
+          {evolutionCard("lg:col-span-12", true)}
+          {audienceCard("lg:col-span-5")}
+          {dailyCard(hasAudience ? "lg:col-span-7" : "lg:col-span-12")}
+          {creativesCard("lg:col-span-7")}
+          {breakdownCard("lg:col-span-5")}
         </>
       )}
-
-      {creatives.length > 1 && (
-        <ChartCard
-          title={platform === "youtube" ? "Comparativo entre vídeos" : "Comparativo entre anúncios"}
-          subtitle="Escolha a métrica para ranquear os criativos desta plataforma."
-          className={retention || audience ? "lg:col-span-5" : "lg:col-span-12"}
-          controls={<MetricSelect value={breakdownMetric} onChange={setBreakdownMetric} options={options} />}
-          table={{
-            columns: [
-              { key: "label", label: "Criativo" },
-              { key: "value", label: METRICS[breakdownMetric].label, align: "right" },
-            ],
-            rows: breakdownData.map((d) => ({ label: d.label, value: fmtValue(d.value, METRICS[breakdownMetric].format) })),
-          }}
-        >
-          <BarBreakdownChart data={breakdownData} format={METRICS[breakdownMetric].format} valueLabel={METRICS[breakdownMetric].label} />
-        </ChartCard>
-      )}
-
-      <Card title={platform === "youtube" ? "Vídeos" : "Anúncios"} subtitle="Clique no criativo para ver a prévia. Ordene pelas colunas." className="lg:col-span-7">
-        <DataTable columns={creativeColumns} rows={creatives} rowKey={(r) => r.group.id} initialSort={{ key: "investment", dir: "desc" }} footer={creativeFooter} />
-      </Card>
-
-      <DailyTable rows={rows} keys={DAILY_KEYS[platform]} today={today} className="lg:col-span-5" />
 
       <CreativePreviewModal group={openCreative?.group ?? null} totals={openCreative?.totals ?? null} onClose={() => setOpenCreative(null)} />
     </PageGrid>

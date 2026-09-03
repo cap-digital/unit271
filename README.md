@@ -26,13 +26,13 @@ A chamada é feita direto do navegador (a função aceita CORS). O último paylo
 ## Regras de negócio
 
 - **Custo = Investimento.** Todas as métricas de custo (CPM, CPC, CPV, CPE) usam a coluna `Investimento`; a coluna Spend/Cost é ignorada.
-- **MEDX.** Campanhas cujo nome contém `MEDX` formam uma campanha separada. O switch no menu alterna entre “somente MEDX” e “somente campanha comum”. Não há Google em MEDX, então a página Google é ocultada nesse modo.
+- **MEDX.** Campanhas cujo nome contém `MEDX` formam uma campanha separada. O switch no menu alterna entre “somente MEDX” e “somente campanha 27.1”. Não há Google em MEDX, então a página Google é ocultada nesse modo.
 - **Métricas derivadas** (sempre calculadas sobre totais, nunca média de linhas):
   - CPM = Investimento ÷ Impressões × 1.000 · CPC = Investimento ÷ Cliques · CTR = Cliques ÷ Impressões
   - CPV = Investimento ÷ Visualizações · VTR = Visualizações ÷ Impressões (YouTube: TrueView; TikTok: views de 2 s)
   - CPE = Investimento ÷ Engajamentos (Google/YouTube) · Conclusão = Views 100% ÷ Visualizações
   - YouTube reporta *taxas* de quartil; convertemos em contagens (taxa × impressões) por linha antes de somar.
-- **Metas** (página Progresso de Metas) têm valores padrão em `lib/goals.ts` e são editáveis na interface (ficam salvas no navegador). O ritmo esperado é linear sobre o período configurado.
+- **Metas** (página Progresso de Metas) ficam em `lib/goals.ts`, com período próprio por campanha: 27.1 de 31/08 a 18/10 e MEDX de 01/09 a 13/09. O ritmo esperado é linear sobre esse período e conta apenas dias fechados.
 
 ## Estrutura
 

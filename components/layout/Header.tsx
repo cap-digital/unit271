@@ -28,7 +28,7 @@ export function Header({ title, subtitle, showRange = true }: HeaderProps) {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="truncate text-[16px] font-semibold leading-tight text-ink">{title}</h1>
-              {medx ? <Badge variant="gold">MEDX</Badge> : <Badge variant="navy">Campanha comum</Badge>}
+              {medx ? <Badge variant="gold">MEDX</Badge> : <Badge variant="navy">Campanha 27.1</Badge>}
             </div>
             <p className="mt-0.5 truncate text-[11px] text-muted">{subtitle ?? "Universidade Tiradentes · Medicina 2027.1 · Mídia paga (Google, YouTube e TikTok)"}</p>
           </div>

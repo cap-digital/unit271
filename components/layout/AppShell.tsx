@@ -1,12 +1,16 @@
 "use client";
 
 import { AlertTriangle, Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useDashboard } from "@/store/DashboardContext";
 import { PageSkeleton } from "@/components/ui/Skeleton";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
+
+// WebGL só no cliente: fora do bundle de servidor e sem tentar renderizar sem canvas.
+const GradientWaves = dynamic(() => import("./GradientWaves").then((m) => m.GradientWaves), { ssr: false });
 
 const TITLES: Record<string, string> = {
   "/": "Visão geral",
@@ -30,7 +34,7 @@ function LoadingCard() {
       </div>
       <p className="text-sm font-semibold text-ink">Carregando dados das campanhas…</p>
       <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted">
-        Buscando Google, YouTube e TikTok na base de dados. A primeira carga pode levar até um minuto{seconds >= 8 ? ` (${seconds} s)` : ""}.
+        Buscando Google, YouTube e TikTok na base de dados. A primeira carga pode levar até dois minutos{seconds >= 8 ? ` (${seconds} s)` : ""}.
       </p>
     </div>
   );
@@ -43,13 +47,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const title = TITLES[pathname] ?? Object.entries(TITLES).find(([k]) => k !== "/" && pathname.startsWith(k))?.[1] ?? "Dashboard";
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      {/* Ondas da identidade Unit no fundo; os cards são opacos, então ela aparece nas respirações do layout. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+        <GradientWaves />
+      </div>
       <Sidebar />
-      <main className="w-full pb-28 pt-3 md:pb-6 md:pl-[104px]">
-        <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-4 lg:px-6">
+      <main className="relative z-10 w-full pb-28 pt-3 md:pb-6 md:pl-[104px] lg:flex lg:min-h-screen lg:flex-col lg:py-4">
+        <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-4 lg:shrink-0 lg:px-6">
           <Header title={title} showRange={pathname !== "/metas"} />
         </div>
-        <div className="mx-auto mt-3 w-full max-w-[1600px] space-y-3 px-3 sm:px-4 lg:px-6">
+        <div className="mx-auto mt-3 w-full max-w-[1600px] space-y-3 px-3 sm:px-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:px-6">
           {!hasData && status === "loading" && (
             <>
               <LoadingCard />
@@ -69,7 +77,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           )}
           {hasData && (
-            <div className={`space-y-3 transition-opacity duration-300 ${status === "refreshing" ? "opacity-80" : "opacity-100"}`}>
+            <div className={`space-y-3 transition-opacity duration-300 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col ${status === "refreshing" ? "opacity-80" : "opacity-100"}`}>
               {error && (
                 <div className="flex items-center gap-2 rounded-2xl border border-[#f5d0d0] bg-[#fdeaea] px-3 py-2 text-[12px] text-crit" role="status">
                   <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
@@ -90,8 +98,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="fade-in flex items-center gap-3 rounded-2xl border border-line bg-surface px-5 py-4 shadow-float">
             <Loader2 className="h-5 w-5 animate-spin text-navy" aria-hidden />
             <div>
-              <p className="text-sm font-semibold text-ink">{medx ? "Carregando dados MEDX…" : "Carregando dados da campanha comum…"}</p>
-              <p className="text-[11px] text-muted">{medx ? "Exibindo somente campanhas MEDX." : "Exibindo somente a campanha comum."}</p>
+              <p className="text-sm font-semibold text-ink">{medx ? "Carregando dados MEDX…" : "Carregando dados da campanha 27.1…"}</p>
+              <p className="text-[11px] text-muted">{medx ? "Exibindo somente campanhas MEDX." : "Exibindo somente a campanha 27.1."}</p>
             </div>
           </div>
         </div>

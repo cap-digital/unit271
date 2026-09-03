@@ -1,7 +1,6 @@
 "use client";
 
-import { Pencil } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { diffDays, fmtDateBR } from "@/lib/dates";
 import { fmtCurrency, fmtInt, fmtPct } from "@/lib/format";
 import { impliedUnitCost } from "@/lib/goals";
@@ -9,7 +8,6 @@ import { aggregate, METRICS, metricValue, type Totals } from "@/lib/metrics";
 import { PLATFORM_LABEL, type Platform } from "@/lib/types";
 import { useDashboard } from "@/store/DashboardContext";
 import { GoalCard, pacing, StatusChip } from "@/components/goals/GoalCard";
-import { GoalEditor } from "@/components/goals/GoalEditor";
 import { PageGrid } from "@/components/layout/PageGrid";
 import { DataTable, type Column } from "@/components/tables/DataTable";
 import { PlatformBadge } from "@/components/ui/Badge";
@@ -35,25 +33,26 @@ interface SummaryRow {
 }
 
 export default function GoalsPage() {
-  const { scopedRows, goals, activeGoals, setGoals, resetGoals, medx, today } = useDashboard();
-  const [editing, setEditing] = useState(false);
+  const { scopedRows, activeGoals, medx, today } = useDashboard();
 
-  const { periodStart, periodEnd } = goals;
+  const { periodStart, periodEnd, platforms: goalsByPlatform } = activeGoals;
   const periodRows = useMemo(() => scopedRows.filter((r) => r.date >= periodStart && r.date <= periodEnd), [scopedRows, periodStart, periodEnd]);
   const totalDays = Math.max(1, diffDays(periodStart, periodEnd) + 1);
   const elapsedDays = Math.min(totalDays, Math.max(0, diffDays(periodStart, today) + 1));
+  // dias fechados definem o ritmo esperado; o dia em andamento não conta
+  const completedDays = Math.min(totalDays, Math.max(0, diffDays(periodStart, today)));
   const elapsedPct = elapsedDays / totalDays;
 
-  const platforms = ORDER.filter((p) => !!activeGoals[p]);
+  const platforms = ORDER.filter((p) => !!goalsByPlatform[p]);
 
   const summary = useMemo<SummaryRow[]>(
     () =>
       platforms.map((p) => {
-        const goal = activeGoals[p]!;
+        const goal = goalsByPlatform[p]!;
         const totals = aggregate(periodRows.filter((r) => r.platform === p));
         const kpiActual = metricValue(goal.metric, totals) ?? 0;
         const unit = impliedUnitCost(goal);
-        const pace = pacing(kpiActual, goal.target, elapsedDays, totalDays);
+        const pace = pacing(kpiActual, goal.target, elapsedDays, totalDays, completedDays);
         return {
           platform: p,
           totals,
@@ -70,7 +69,7 @@ export default function GoalsPage() {
           status: pace.status,
         };
       }),
-    [platforms, activeGoals, periodRows, elapsedDays, totalDays],
+    [platforms, goalsByPlatform, periodRows, elapsedDays, completedDays, totalDays],
   );
 
   const totalInvTarget = summary.reduce((a, r) => a + r.invTarget, 0);
@@ -103,14 +102,8 @@ export default function GoalsPage() {
     <PageGrid>
       <Card
         className="lg:col-span-12"
-        title={`Metas · ${medx ? "MEDX" : "campanha comum"}`}
-        subtitle={`Período de ${fmtDateBR(periodStart)} a ${fmtDateBR(periodEnd)} · acumulado desde o início do período (não usa o filtro de datas do topo).`}
-        actions={
-          <button type="button" onClick={() => setEditing(true)} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-3 text-[13px] font-medium text-ink hover:bg-surface-3">
-            <Pencil className="h-3.5 w-3.5" aria-hidden />
-            Editar metas
-          </button>
-        }
+        title={`Metas · ${medx ? "MEDX" : "campanha 27.1"}`}
+        subtitle={`Veiculação de ${fmtDateBR(periodStart)} a ${fmtDateBR(periodEnd)} · acumulado desde o início do período (não usa o filtro de datas do topo).`}
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Tile label="Período decorrido" value={`${Math.round(elapsedPct * 100)}%`} hint={`${elapsedDays} de ${totalDays} dias`} />
@@ -122,7 +115,7 @@ export default function GoalsPage() {
 
       {platforms.length === 0 ? (
         <Card className="lg:col-span-12">
-          <EmptyState title="Nenhuma meta configurada para este modo" description="Use “Editar metas” para definir investimento e meta principal por plataforma." />
+          <EmptyState title="Nenhuma meta configurada para este modo" description="As metas contratadas ficam definidas no código do dashboard." />
         </Card>
       ) : (
         <>
@@ -131,7 +124,7 @@ export default function GoalsPage() {
               key={s.platform}
               className={platforms.length >= 3 ? "lg:col-span-4" : "lg:col-span-6"}
               platform={s.platform}
-              goal={activeGoals[s.platform]!}
+              goal={goalsByPlatform[s.platform]!}
               totals={s.totals}
               periodStart={periodStart}
               periodEnd={periodEnd}
@@ -145,8 +138,6 @@ export default function GoalsPage() {
           </Card>
         </>
       )}
-
-      <GoalEditor open={editing} onClose={() => setEditing(false)} goals={goals} mode={medx ? "medx" : "normal"} onSave={setGoals} onReset={resetGoals} />
     </PageGrid>
   );
 }

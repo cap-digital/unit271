@@ -23,6 +23,8 @@ interface TimeSeriesChartProps {
   format: ValueFormat;
   /** Altura fixa em px; por padrão usa altura relativa à viewport. */
   height?: number;
+  /** Ocupa toda a altura disponível do card (usado quando a página preenche a viewport). */
+  fill?: boolean;
 }
 
 /** Altura padrão dos gráficos: acompanha a viewport (bom em 1366×768) com piso e teto. */
@@ -31,7 +33,7 @@ export const CHART_H = "h-[25vh] min-h-[168px] max-h-[300px]";
 const margin = { top: 12, right: 12, bottom: 4, left: 0 };
 
 /** Linha (ou área para série única) com crosshair + tooltip com todas as séries no X. */
-export function TimeSeriesChart({ data, series, format, height }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ data, series, format, height, fill = false }: TimeSeriesChartProps) {
   const single = series.length === 1;
   let maxAbs = 0;
   for (const p of data) for (const s of series) {
@@ -60,7 +62,7 @@ export function TimeSeriesChart({ data, series, format, height }: TimeSeriesChar
   const grid = <CartesianGrid vertical={false} stroke={CHART_CHROME.grid} />;
 
   return (
-    <div style={height ? { height } : undefined} className={`w-full ${height ? "" : CHART_H}`}>
+    <div style={height ? { height } : undefined} className={`w-full ${height ? "" : fill ? "h-full min-h-[200px]" : CHART_H}`}>
       <ResponsiveContainer width="100%" height="100%">
         {single ? (
           <AreaChart data={data} margin={margin}>
