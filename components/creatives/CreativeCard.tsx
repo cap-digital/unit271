@@ -62,6 +62,8 @@ interface CreativeCardProps {
 
 export function CreativeCard({ group, totals, highlight, onOpen }: CreativeCardProps) {
   const keys = CREATIVE_METRICS[group.platform];
+  // o título já é o nome do anúncio: não repete a informação na linha de apoio
+  const subtitle = [group.title === group.ad ? null : group.ad, ...group.adGroups].filter(Boolean).join(" · ");
   const ordered = highlight && !keys.includes(highlight) ? [highlight, ...keys.slice(0, 5)] : keys;
   return (
     <article className="fade-in flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card">
@@ -75,10 +77,11 @@ export function CreativeCard({ group, totals, highlight, onOpen }: CreativeCardP
           <h3 className="line-clamp-2 text-[14px] font-semibold leading-snug text-ink" title={group.title}>
             {group.title}
           </h3>
-          <p className="mt-0.5 truncate text-[11px] text-muted" title={`${group.ad} · ${group.adGroup}`}>
-            {group.ad}
-            {group.adGroup ? ` · ${group.adGroup}` : ""}
-          </p>
+          {subtitle && (
+            <p className="mt-0.5 truncate text-[11px] text-muted" title={subtitle}>
+              {subtitle}
+            </p>
+          )}
         </div>
         <dl className="grid grid-cols-3 gap-x-2 gap-y-2">
           {ordered.map((k) => {
@@ -118,17 +121,14 @@ export function CreativePreviewModal({ group, totals, onClose }: { group: Creati
         <div className="flex flex-wrap items-center gap-2">
           <PlatformBadge platform={group.platform} />
           {group.isMedx && <Badge variant="gold">MEDX</Badge>}
-          <Badge variant="outline">{group.ad}</Badge>
+          {group.title !== group.ad && <Badge variant="outline">{group.ad}</Badge>}
           {preview.openUrl && (
             <a href={preview.openUrl} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1 text-[12px] font-medium text-navy hover:underline">
               Abrir original <ExternalLink className="h-3 w-3" aria-hidden />
             </a>
           )}
         </div>
-        <p className="text-[11px] text-muted">
-          {group.campaign}
-          {group.adGroup ? ` · ${group.adGroup}` : ""}
-        </p>
+        <p className="text-[11px] text-muted">{[group.campaign, ...group.adGroups].filter(Boolean).join(" · ")}</p>
         <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {keys.map((k) => {
             const def = METRICS[k];

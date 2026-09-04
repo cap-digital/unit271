@@ -73,7 +73,10 @@ export interface CreativeGroup {
   platform: Platform;
   title: string;
   ad: string;
+  /** Primeiro grupo de anúncios encontrado (compatibilidade). */
   adGroup: string;
+  /** Todos os grupos em que o anúncio rodou — o mesmo criativo pode estar em vários. */
+  adGroups: string[];
   campaign: string;
   isMedx: boolean;
   url: string | null;
@@ -84,6 +87,7 @@ export interface CreativeGroup {
 export function groupCreatives(rows: Row[]): CreativeGroup[] {
   const map = new Map<string, CreativeGroup>();
   const latestUrlDate = new Map<string, string>();
+  const groupsSeen = new Map<string, Set<string>>();
   for (const r of rows) {
     let g = map.get(r.creativeId);
     if (!g) {
@@ -93,18 +97,22 @@ export function groupCreatives(rows: Row[]): CreativeGroup[] {
         title: r.creativeTitle,
         ad: r.ad,
         adGroup: r.adGroup,
+        adGroups: [],
         campaign: r.campaign,
         isMedx: r.isMedx,
         url: null,
         rows: [],
       };
       map.set(r.creativeId, g);
+      groupsSeen.set(r.creativeId, new Set());
     }
     g.rows.push(r);
+    if (r.adGroup) groupsSeen.get(r.creativeId)!.add(r.adGroup);
     if (r.creativeUrl && r.date >= (latestUrlDate.get(r.creativeId) ?? "")) {
       g.url = r.creativeUrl;
       latestUrlDate.set(r.creativeId, r.date);
     }
   }
+  for (const g of map.values()) g.adGroups = Array.from(groupsSeen.get(g.id) ?? []);
   return Array.from(map.values());
 }

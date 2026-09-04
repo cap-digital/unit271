@@ -52,6 +52,11 @@ interface CreativeRow {
   totals: Totals;
 }
 
+/** Linha de apoio do criativo: evita repetir o título e lista todos os grupos de anúncios. */
+export function creativeSubtitle(g: CreativeGroup): string {
+  return [g.title === g.ad ? null : g.ad, ...g.adGroups].filter(Boolean).join(" · ");
+}
+
 export function PlatformPage({ platform }: { platform: Platform }) {
   const { filteredRows, previousRows, resolved, range, today, medx } = useDashboard();
   const [seriesMetric, setSeriesMetric] = useState<MetricKey>("investment");
@@ -76,7 +81,7 @@ export function PlatformPage({ platform }: { platform: Platform }) {
   const campaigns = useMemo(() => [...new Set(rows.map((r) => r.campaign))], [rows]);
   const adGroups = useMemo(() => [...new Set(rows.map((r) => r.adGroup).filter(Boolean))], [rows]);
 
-  // Retenção (YouTube): destaque = vídeo com mais views
+  // Retenção (YouTube): destaque = anúncio com mais views
   const retention = useMemo(() => {
     if (platform !== "youtube") return null;
     const series = creatives
@@ -136,7 +141,7 @@ export function PlatformPage({ platform }: { platform: Platform }) {
   const creativeColumns: Column<CreativeRow>[] = [
     {
       key: "creative",
-      label: platform === "youtube" ? "Vídeo" : "Anúncio",
+      label: "Anúncio",
       sortValue: (r) => r.group.title,
       render: (r) => (
         <div className="flex min-w-[220px] items-center gap-3">
@@ -145,9 +150,12 @@ export function PlatformPage({ platform }: { platform: Platform }) {
             <button type="button" onClick={() => setOpenCreative(r)} className="line-clamp-2 text-left font-medium text-ink hover:underline" title={r.group.title}>
               {r.group.title}
             </button>
-            <p className="truncate text-[11px] text-muted" title={r.group.ad}>
-              {r.group.ad}
-            </p>
+            {/* título e nome do anúncio são o mesmo campo; a linha de apoio mostra os grupos de anúncios */}
+            {creativeSubtitle(r.group) && (
+              <p className="truncate text-[11px] text-muted" title={creativeSubtitle(r.group)}>
+                {creativeSubtitle(r.group)}
+              </p>
+            )}
           </div>
         </div>
       ),
@@ -238,7 +246,7 @@ export function PlatformPage({ platform }: { platform: Platform }) {
   );
 
   const creativesCard = (span: string, fill = false) => (
-    <Card title={platform === "youtube" ? "Vídeos" : "Anúncios"} subtitle="Clique no criativo para ver a prévia. Ordene pelas colunas." className={span}>
+    <Card title="Anúncios" subtitle="Clique no criativo para ver a prévia. Ordene pelas colunas." className={span}>
       <DataTable
         columns={creativeColumns}
         rows={creatives}
@@ -257,7 +265,7 @@ export function PlatformPage({ platform }: { platform: Platform }) {
   const breakdownCard = (span: string) =>
     creatives.length > 1 ? (
       <ChartCard
-        title={platform === "youtube" ? "Comparativo entre vídeos" : "Comparativo entre anúncios"}
+        title="Comparativo entre anúncios"
         subtitle="Escolha a métrica para ranquear os criativos desta plataforma."
         className={span}
         controls={<MetricSelect value={breakdownMetric} onChange={setBreakdownMetric} options={options} />}
@@ -275,12 +283,12 @@ export function PlatformPage({ platform }: { platform: Platform }) {
 
   const retentionCard = hasRetention && retention && (
     <ChartCard
-      title="Curva de retenção por vídeo"
+      title="Curva de retenção por anúncio"
       subtitle="Parcela das impressões que segue assistindo em cada quartil. O selecionado fica em destaque; a média em azul-marinho."
       className="lg:col-span-7"
       controls={
         <SimpleSelect
-          label="Vídeo em destaque"
+          label="Anúncio em destaque"
           value={effectiveHighlight ?? ""}
           onChange={(v) => setHighlight(v)}
           options={retention.series.map((s) => ({ key: s.key, label: s.label }))}
@@ -290,12 +298,12 @@ export function PlatformPage({ platform }: { platform: Platform }) {
         <>
           <SeriesKey color={PLATFORM_COLOR.youtube} label="Selecionado" />
           <SeriesKey color="#0e2f4f" label="Média" />
-          <SeriesKey color="#c9d1db" label="Outros vídeos" />
+          <SeriesKey color="#c9d1db" label="Outros anúncios" />
         </>
       }
       table={{
         columns: [
-          { key: "video", label: "Vídeo" },
+          { key: "video", label: "Anúncio" },
           { key: "p25", label: "25%", align: "right" },
           { key: "p50", label: "50%", align: "right" },
           { key: "p75", label: "75%", align: "right" },

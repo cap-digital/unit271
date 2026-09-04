@@ -19,7 +19,7 @@ export interface Row {
   ad: string;
   /** Chave estável para agrupar linhas do mesmo criativo. */
   creativeId: string;
-  /** Nome amigável do criativo (título do vídeo ou nome do anúncio). */
+  /** Nome do criativo — o nome do anúncio em todas as plataformas. */
   creativeTitle: string;
   /** URL original do criativo (YouTube, Drive ou thumbnail TikTok). */
   creativeUrl: string | null;

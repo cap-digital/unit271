@@ -101,7 +101,6 @@ function normalizeYouTube(rows: Raw[]): Row[] {
     const campaign = str(r["Campaign Name"]);
     const ad = str(r["Ad Name"]) || "Anúncio";
     const adGroup = str(r["Ad Group Name"]);
-    const title = str(r["Video Title"]) || ad;
     const url = str(r["URL Video"]) || null;
     const impressions = num(r["Impressions"]);
     return {
@@ -111,8 +110,8 @@ function normalizeYouTube(rows: Raw[]): Row[] {
       campaign,
       adGroup,
       ad,
-      creativeId: `youtube:${slug(url ?? title)}`,
-      creativeTitle: title,
+      creativeId: `youtube:${slug(campaign)}:${slug(ad)}`,
+      creativeTitle: ad,
       creativeUrl: url,
       isMedx: isMedxCampaign(campaign),
       investment: num(r["Investimento"]),
