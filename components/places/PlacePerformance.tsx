@@ -8,6 +8,7 @@ import { METRICS, metricValue, type MetricKey } from "@/lib/metrics";
 import { groupByCity, aggregatePlaces, type PlaceGroup } from "@/lib/places";
 import { PLATFORM_LABEL, type PlacePlatform } from "@/lib/types";
 import { useDashboard } from "@/store/DashboardContext";
+import { MedxSwitch } from "@/components/layout/MedxSwitch";
 import { DataTable, type Column } from "@/components/tables/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
@@ -19,7 +20,7 @@ const PLACE_KEYS: Record<PlacePlatform, MetricKey[]> = {
 };
 
 export function PlacePerformanceButton({ platform }: { platform: PlacePlatform }) {
-  const { filteredPlaceRows, dataset, status, refresh, resolved } = useDashboard();
+  const { filteredPlaceRows, dataset, status, refresh, resolved, medx } = useDashboard();
   const [open, setOpen] = useState(false);
 
   const rows = useMemo(() => filteredPlaceRows.filter((p) => p.platform === platform), [filteredPlaceRows, platform]);
@@ -27,6 +28,9 @@ export function PlacePerformanceButton({ platform }: { platform: PlacePlatform }
   // atualização não volta, isso é carregamento, não ausência de dados
   const hasAnyPlaceData = useMemo(() => (dataset?.placeRows ?? []).some((p) => p.platform === platform), [dataset, platform]);
   const loading = status === "loading" || (status === "refreshing" && !hasAnyPlaceData);
+  // o switch só faz sentido onde a plataforma tem as duas campanhas — no Google
+  // não há MEDX, e a própria página some nesse modo
+  const hasMedx = useMemo(() => (dataset?.placeRows ?? []).some((p) => p.platform === platform && p.isMedx), [dataset, platform]);
   const groups = useMemo(() => groupByCity(rows), [rows]);
   const totals = useMemo(() => aggregatePlaces(rows), [rows]);
   const keys = PLACE_KEYS[platform];
@@ -80,9 +84,18 @@ export function PlacePerformanceButton({ platform }: { platform: PlacePlatform }
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} size="lg" title={`Desempenho por praça · ${PLATFORM_LABEL[platform]}`}>
-        <p className="mb-3 text-[11px] text-muted">
-          {resolved.start === resolved.end ? fmtDay(resolved.start) : `${fmtDay(resolved.start)} – ${fmtDay(resolved.end)}`} · clique no cabeçalho para ordenar.
-        </p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] text-muted">
+            {resolved.start === resolved.end ? fmtDay(resolved.start) : `${fmtDay(resolved.start)} – ${fmtDay(resolved.end)}`} · clique no cabeçalho para ordenar.
+          </p>
+          {/* troca de campanha sem sair do modal */}
+          {hasMedx && (
+            <div className="flex items-center gap-2 rounded-full bg-surface-2 px-2 py-1">
+              <span className="text-[11px] font-medium text-muted">{medx ? "Campanha MEDX" : "Campanha 27.1"}</span>
+              <MedxSwitch layout="horizontal" />
+            </div>
+          )}
+        </div>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 text-center" role="status" aria-live="polite">
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-navy">
