@@ -179,6 +179,7 @@ export function PlatformPage({ platform }: { platform: Platform }) {
 
   const hasRetention = !!(retention && retention.series.length > 0);
   const hasAudience = !!(audience && audience.ages.length > 0);
+  const hasBreakdown = creatives.length > 1;
 
   const badges = (
     <div className="flex flex-wrap items-center gap-2 px-1 lg:col-span-12">
@@ -393,10 +394,22 @@ export function PlatformPage({ platform }: { platform: Platform }) {
         <>
           {funnelCard}
           {evolutionCard("lg:col-span-12", true)}
-          {breakdownCard(hasRetention ? "lg:col-span-5" : "lg:col-span-12")}
-          {retentionCard}
-          {creativesCard("lg:col-span-7")}
-          {dailyCard("lg:col-span-5")}
+          {hasBreakdown ? (
+            <>
+              {breakdownCard(hasRetention ? "lg:col-span-5" : "lg:col-span-12")}
+              {retentionCard}
+              {creativesCard("lg:col-span-7")}
+              {dailyCard("lg:col-span-5")}
+            </>
+          ) : (
+            /* Com um anúncio só (caso do MEDX) não há comparativo: em vez de deixar
+               a coluna da direita vazia, o Desempenho diário ocupa as duas faixas. */
+            <>
+              {retentionCard}
+              {dailyCard("lg:col-span-5 lg:row-span-2", true)}
+              {creativesCard("lg:col-span-7")}
+            </>
+          )}
         </>
       ) : (
         <>
