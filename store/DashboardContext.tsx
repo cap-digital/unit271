@@ -5,7 +5,7 @@ import { AUTO_REFRESH_MS, DATA_BODY, DATA_ENDPOINT, DATA_KEY, FETCH_TIMEOUT_MS, 
 import { DEFAULT_RANGE, previousRange, resolveRange, todayISO, type DateRange, type ResolvedRange } from "@/lib/dates";
 import { GOALS, type CampaignGoals } from "@/lib/goals";
 import { normalizePayload } from "@/lib/normalize";
-import type { Dataset, Platform, RawPayload, Row } from "@/lib/types";
+import type { Dataset, PlaceRow, Platform, RawPayload, Row } from "@/lib/types";
 
 export type LoadStatus = "loading" | "refreshing" | "ready" | "error";
 
@@ -21,6 +21,8 @@ export interface DashboardContextValue {
   filteredRows: Row[];
   /** Linhas do período anterior de mesma duração (para deltas). */
   previousRows: Row[];
+  /** Praças do modo ativo dentro do intervalo de datas (já reconciliadas). */
+  filteredPlaceRows: PlaceRow[];
   dataMin: string | null;
   dataMax: string | null;
   today: string;
@@ -196,6 +198,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const filteredRows = useMemo(() => scopedRows.filter((r) => r.date >= resolved.start && r.date <= resolved.end), [scopedRows, resolved]);
   const previousRows = useMemo(() => scopedRows.filter((r) => r.date >= previous.start && r.date <= previous.end), [scopedRows, previous]);
+  const filteredPlaceRows = useMemo(
+    () => (dataset?.placeRows ?? []).filter((p) => p.isMedx === medx && p.date >= resolved.start && p.date <= resolved.end),
+    [dataset, medx, resolved],
+  );
 
   const activeGoals = medx ? GOALS.medx : GOALS.normal;
 
@@ -207,6 +213,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     scopedRows,
     filteredRows,
     previousRows,
+    filteredPlaceRows,
     dataMin,
     dataMax,
     today,

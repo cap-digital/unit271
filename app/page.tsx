@@ -189,7 +189,7 @@ export default function OverviewPage() {
         <FunnelChart stages={stages} />
       </ChartCard>
 
-      <Card title="Comparativo entre plataformas" subtitle="Custos e taxas calculados sobre o Investimento. Clique no cabeçalho para ordenar." className="lg:col-span-7">
+      <Card title="Comparativo entre plataformas" subtitle="Clique no cabeçalho para ordenar." className="lg:col-span-7">
         <DataTable columns={platformColumns} rows={platformRows} rowKey={(r) => r.platform} initialSort={{ key: "investment", dir: "desc" }} footer={platformFooter} />
       </Card>
 

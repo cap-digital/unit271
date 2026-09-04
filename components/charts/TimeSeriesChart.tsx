@@ -42,6 +42,8 @@ export function TimeSeriesChart({ data, series, format, height, fill = false }: 
     if (typeof v === "number" && Math.abs(v) > maxAbs) maxAbs = Math.abs(v);
   }
   const yTick = makeAxisFormatter(format, maxAbs);
+  // o eixo é escala (compacto); o rótulo é valor — em reais, sempre com 2 casas
+  const labelFmt = format === "currency" ? (v: number) => fmtValue(v, format) : yTick;
   // Em períodos longos os rótulos são exibidos a cada N pontos para não se sobrepor.
   const labelStep = Math.max(1, Math.ceil(data.length / 12));
   /**
@@ -122,7 +124,7 @@ export function TimeSeriesChart({ data, series, format, height, fill = false }: 
               activeDot={{ r: 5, strokeWidth: 2, stroke: CHART_CHROME.surface }}
               isAnimationActive={false}
             >
-              <LabelList dataKey={series[0].key} content={makePointLabel({ format: yTick, step: labelStep, count: data.length })} />
+              <LabelList dataKey={series[0].key} content={makePointLabel({ format: labelFmt, step: labelStep, count: data.length })} />
             </Area>
           </AreaChart>
         ) : (
@@ -145,7 +147,7 @@ export function TimeSeriesChart({ data, series, format, height, fill = false }: 
                 isAnimationActive={false}
               >
                 {/* séries alternam acima/abaixo do ponto: linhas que se cruzam não empilham rótulos */}
-                <LabelList dataKey={s.key} content={makePointLabel({ format: yTick, step: labelStep, dyAt: dyAtFor(s.key), count: data.length })} />
+                <LabelList dataKey={s.key} content={makePointLabel({ format: labelFmt, step: labelStep, dyAt: dyAtFor(s.key), count: data.length })} />
               </Line>
             ))}
           </LineChart>

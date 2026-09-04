@@ -5,7 +5,6 @@ const dec1Fmt = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maxim
 const dec2Fmt = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const brl2 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const brl3 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 3, maximumFractionDigits: 3 });
-const brl0 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 export type ValueFormat = "currency" | "int" | "pct" | "decimal";
 
@@ -19,14 +18,15 @@ export function fmtDecimal(v: number | null | undefined, digits: 1 | 2 = 2): str
   return digits === 1 ? dec1Fmt.format(v) : dec2Fmt.format(v);
 }
 
-/** Moeda: valores pequenos (< R$ 0,10) ganham 3 casas para não virarem "R$ 0,00". */
+/**
+ * Moeda com duas casas em todo o dashboard — o valor investido é lido como
+ * dinheiro, não como escala. Valores pequenos (< R$ 0,10) ganham 3 casas para
+ * não virarem "R$ 0,00". O segundo parâmetro existe só para compartilhar a
+ * assinatura com as métricas de contagem, que aceitam forma compacta.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function fmtCurrency(v: number | null | undefined, opts?: { compact?: boolean }): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return "—";
-  if (opts?.compact) {
-    if (Math.abs(v) >= 1_000_000) return `R$ ${dec1Fmt.format(v / 1_000_000)} mi`;
-    if (Math.abs(v) >= 10_000) return `R$ ${dec1Fmt.format(v / 1_000)} mil`;
-    return v >= 100 ? brl0.format(v) : brl2.format(v);
-  }
   if (v !== 0 && Math.abs(v) < 0.1) return brl3.format(v);
   return brl2.format(v);
 }

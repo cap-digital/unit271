@@ -56,7 +56,7 @@ export function DailyTable({ rows, keys, today, title = "Desempenho diário", cl
   for (const k of keys) footer[k] = fmtValue(metricValue(k, all), METRICS[k].format);
 
   return (
-    <Card title={title} subtitle="Clique no cabeçalho para ordenar. Custos e taxas da linha de total são recalculados sobre os totais, não a média das linhas." className={className}>
+    <Card title={title} subtitle="Clique no cabeçalho para ordenar." className={className}>
       <DataTable columns={columns} rows={data} rowKey={(r) => r.date} initialSort={{ key: "date", dir: "desc" }} footer={footer} dense maxHeight={maxHeight} />
     </Card>
   );

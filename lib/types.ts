@@ -51,10 +51,34 @@ export interface RawPayload {
   google?: Record<string, unknown>[];
   youtube?: Record<string, unknown>[];
   tiktok?: Record<string, unknown>[];
+  pracasgoogle?: Record<string, unknown>[];
+  pracasyoutube?: Record<string, unknown>[];
+}
+
+/** Plataformas que reportam desempenho por praça (cidade). */
+export type PlacePlatform = Extract<Platform, "google" | "youtube">;
+
+export const PLACE_PLATFORMS: PlacePlatform[] = ["google", "youtube"];
+
+/** Linha de praça — uma por (plataforma, dia, cidade). */
+export interface PlaceRow {
+  id: string;
+  platform: PlacePlatform;
+  date: string;
+  campaign: string;
+  city: string;
+  isMedx: boolean;
+  investment: number;
+  impressions: number;
+  clicks: number;
+  /** null quando a plataforma não reporta a métrica (Google). */
+  views: number | null;
 }
 
 export interface Dataset {
   rows: Row[];
+  /** Desempenho por praça, já reconciliado com os totais da plataforma. */
+  placeRows: PlaceRow[];
   /** Carimbo de tempo informado pela API. */
   timestamp: string | null;
   /** Momento em que o payload foi baixado pelo navegador (ISO). */

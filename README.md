@@ -32,6 +32,7 @@ A chamada é feita direto do navegador (a função aceita CORS). O último paylo
   - CPV = Investimento ÷ Visualizações · VTR = Visualizações ÷ Impressões (YouTube: TrueView; TikTok: views de 2 s)
   - CPE = Investimento ÷ Engajamentos (Google/YouTube) · Conclusão = Views 100% ÷ Visualizações
   - YouTube reporta *taxas* de quartil; convertemos em contagens (taxa × impressões) por linha antes de somar.
+- **Praças** (botão “Desempenho Praça” em Google e YouTube). A extração por cidade (`pracasgoogle` / `pracasyoutube`) não fecha com o relatório da campanha — no Google chega a divergir 15% em cliques. `lib/places.ts` reconcilia os dois: cada praça mantém sua participação no dia e a soma passa a ser exatamente o total da plataforma, por dia e por métrica. O fator é sempre recalculado a partir dos dados de cada carga, nunca fixo, e por isso acompanha qualquer mudança na divergência. Contagens usam maior resto (somam exato em inteiros); investimento é repartido sem quantizar, para a soma do período não fugir por centavos.
 - **Metas** (página Progresso de Metas) ficam em `lib/goals.ts`, com período próprio por campanha: 27.1 de 31/08 a 18/10 e MEDX de 01/09 a 13/09. O ritmo esperado é linear sobre esse período e conta apenas dias fechados.
 
 ## Estrutura
@@ -40,6 +41,7 @@ A chamada é feita direto do navegador (a função aceita CORS). O último paylo
 app/                páginas (visão geral, google, youtube, tiktok, criativos, metas)
 components/layout   sidebar flutuante, cabeçalho, seletor de período, switch MEDX
 components/charts   série temporal, barras, participação, funil, retenção, agrupadas
+components/places   botão e modal de desempenho por praça
 components/tables   tabela ordenável
 components/pages    página genérica de plataforma, grade de KPIs, tabela diária
 components/creatives, components/goals, components/insights

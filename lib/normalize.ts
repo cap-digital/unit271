@@ -1,4 +1,5 @@
-import type { Dataset, Platform, RawPayload, Row } from "./types";
+import { reconcilePlaces } from "./places";
+import type { Dataset, PlacePlatform, Platform, PlaceRow, RawPayload, Row } from "./types";
 
 type Raw = Record<string, unknown>;
 
@@ -192,13 +193,36 @@ function normalizeTikTok(rows: Raw[]): Row[] {
   });
 }
 
+/** Praças (Geo Target City) — só Google e YouTube reportam essa dimensão. */
+function normalizePlaces(rows: Raw[], platform: PlacePlatform): PlaceRow[] {
+  return rows.map((r, i) => {
+    const campaign = str(r["Campaign Name"]);
+    return {
+      id: `p-${platform}-${i}`,
+      platform,
+      date: toISODate(r["Date (Segment)"] ?? r["Date"]),
+      campaign,
+      city: str(r["Geo Target City (Segment)"]) || "Não informada",
+      isMedx: isMedxCampaign(campaign),
+      investment: num(r["Investimento"]),
+      impressions: num(r["Impressions"]),
+      clicks: num(r["Clicks"]),
+      views: platform === "youtube" ? num(r["Video Trueview Views"]) : null,
+    };
+  });
+}
+
 export function normalizePayload(payload: RawPayload, fetchedAt: string): Dataset {
   const rows: Row[] = [
     ...normalizeGoogle(Array.isArray(payload.google) ? payload.google : []),
     ...normalizeYouTube(Array.isArray(payload.youtube) ? payload.youtube : []),
     ...normalizeTikTok(Array.isArray(payload.tiktok) ? payload.tiktok : []),
   ].filter((r) => r.date !== "");
-  return { rows, timestamp: payload.timestamp ?? null, fetchedAt };
+  const places: PlaceRow[] = [
+    ...normalizePlaces(Array.isArray(payload.pracasgoogle) ? payload.pracasgoogle : [], "google"),
+    ...normalizePlaces(Array.isArray(payload.pracasyoutube) ? payload.pracasyoutube : [], "youtube"),
+  ].filter((r) => r.date !== "");
+  return { rows, placeRows: reconcilePlaces(places, rows), timestamp: payload.timestamp ?? null, fetchedAt };
 }
 
 export function platformOf(row: Row): Platform {

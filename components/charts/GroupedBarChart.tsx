@@ -41,6 +41,7 @@ export function GroupedBarChart({ data, series, format, height, stacked = false 
     if (stacked && stackSum > maxAbs) maxAbs = stackSum;
   }
   const yTick = makeAxisFormatter(format, maxAbs);
+  const labelFmt = format === "currency" ? (v: number) => fmtValue(v, format) : yTick;
   return (
     <div style={height ? { height } : undefined} className={`w-full ${height ? "" : CHART_H}`}>
       <ResponsiveContainer width="100%" height="100%">
@@ -73,7 +74,7 @@ export function GroupedBarChart({ data, series, format, height, stacked = false 
               isAnimationActive={false}
             >
               {/* rótulo compacto no topo da barra; barras zeradas ficam sem rótulo */}
-              {!stacked && <LabelList dataKey={s.key} content={makeBarLabel({ format: yTick })} />}
+              {!stacked && <LabelList dataKey={s.key} content={makeBarLabel({ format: labelFmt })} />}
             </Bar>
           ))}
         </BarChart>

@@ -21,6 +21,7 @@ import { TimeSeriesChart } from "@/components/charts/TimeSeriesChart";
 import { CreativePreviewModal, CreativeThumb } from "@/components/creatives/CreativeCard";
 import { InsightsCard } from "@/components/insights/InsightsCard";
 import { PageGrid } from "@/components/layout/PageGrid";
+import { PlacePerformanceButton } from "@/components/places/PlacePerformance";
 import { DailyTable } from "@/components/pages/DailyTable";
 import { KpiGrid } from "@/components/pages/KpiGrid";
 import { DataTable, type Column } from "@/components/tables/DataTable";
@@ -192,6 +193,11 @@ export function PlatformPage({ platform }: { platform: Platform }) {
           {g}
         </Badge>
       ))}
+      {(platform === "google" || platform === "youtube") && (
+        <div className="ml-auto">
+          <PlacePerformanceButton platform={platform} />
+        </div>
+      )}
     </div>
   );
 
