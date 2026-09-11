@@ -1,3 +1,4 @@
+import { creativeFallbackUrl } from "./creativeOverrides";
 import type { Platform, Row } from "./types";
 
 export type PreviewKind = "youtube" | "drive" | "image" | "none";
@@ -32,7 +33,27 @@ export function driveId(url: string | null): string | null {
   return m ? m[1] : null;
 }
 
-export function previewFor(platform: Platform, url: string | null): Preview {
+/**
+ * Prévia do criativo. `fallbackUrl` (link informado manualmente) entra como
+ * reserva: as thumbnails dele vão para o fim da fila e o vídeo embutível dele
+ * é usado quando a URL da extração não oferece um.
+ */
+export function previewFor(platform: Platform, url: string | null, fallbackUrl: string | null = null): Preview {
+  const primary = basePreview(platform, url);
+  if (!fallbackUrl || fallbackUrl === url) return primary;
+  const fallback = basePreview(platform, fallbackUrl);
+  const thumbCandidates = Array.from(new Set([...primary.thumbCandidates, ...fallback.thumbCandidates]));
+  return {
+    kind: primary.kind !== "none" ? primary.kind : fallback.kind,
+    thumbUrl: thumbCandidates[0] ?? null,
+    thumbCandidates,
+    embedUrl: primary.embedUrl ?? fallback.embedUrl,
+    openUrl: primary.openUrl ?? fallback.openUrl,
+    vertical: primary.vertical || fallback.vertical,
+  };
+}
+
+function basePreview(platform: Platform, url: string | null): Preview {
   const yt = youtubeId(url);
   if (yt) {
     const vertical = /\/shorts\//.test(url ?? "");
@@ -59,7 +80,7 @@ export function previewFor(platform: Platform, url: string | null): Preview {
       embedUrl: `https://drive.google.com/file/d/${dv}/preview`,
       // Sem link externo: a prévia fica no próprio dashboard, sem levar o usuário ao Drive.
       openUrl: null,
-      vertical: false,
+      vertical: platform === "tiktok",
     };
   }
   if (url && /^https?:\/\//.test(url)) {
@@ -80,6 +101,8 @@ export interface CreativeGroup {
   campaign: string;
   isMedx: boolean;
   url: string | null;
+  /** Link de prévia informado manualmente, usado quando a extração não traz (ou a URL expira). */
+  fallbackUrl: string | null;
   rows: Row[];
 }
 
@@ -101,6 +124,7 @@ export function groupCreatives(rows: Row[]): CreativeGroup[] {
         campaign: r.campaign,
         isMedx: r.isMedx,
         url: null,
+        fallbackUrl: creativeFallbackUrl(r.platform, r.ad),
         rows: [],
       };
       map.set(r.creativeId, g);

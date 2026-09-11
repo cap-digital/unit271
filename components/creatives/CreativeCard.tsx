@@ -23,11 +23,12 @@ interface ThumbProps {
 
 /** Thumbnail com fallback em cadeia (Shorts → hqdefault) e placeholder quando a URL expira (TikTok assina as imagens por poucas horas). */
 export function CreativeThumb({ group, className = "", onClick }: ThumbProps) {
-  const preview = previewFor(group.platform, group.url);
+  const preview = previewFor(group.platform, group.url, group.fallbackUrl);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => setAttempt(0), [preview.thumbUrl]);
   const src = preview.thumbCandidates[attempt] ?? null;
-  const playable = preview.kind === "youtube" || preview.kind === "drive";
+  // botão de play sempre que houver vídeo embutível, venha ele da extração ou do link de reserva
+  const playable = !!preview.embedUrl;
   const fit = preview.vertical ? "object-cover" : "object-contain bg-navy-soft";
   const content =
     src ? (
@@ -103,7 +104,7 @@ export function CreativeCard({ group, totals, highlight, onOpen }: CreativeCardP
 
 export function CreativePreviewModal({ group, totals, onClose }: { group: CreativeGroup | null; totals: Totals | null; onClose: () => void }) {
   if (!group || !totals) return <Modal open={false} onClose={onClose}>{null}</Modal>;
-  const preview = previewFor(group.platform, group.url);
+  const preview = previewFor(group.platform, group.url, group.fallbackUrl);
   const keys = CREATIVE_METRICS[group.platform];
   const frameClass = preview.vertical ? "mx-auto aspect-[9/16] max-h-[60vh]" : "aspect-video w-full";
   return (
