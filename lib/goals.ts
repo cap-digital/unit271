@@ -28,8 +28,10 @@ export interface GoalsConfig {
  * Metas e períodos informados pelo cliente.
  * Campanha 27.1 (31/08 a 18/10): TikTok 9.100 / 627.586 impressões ·
  * YouTube 12.600 / 70.000 views · Google 9.800 / 1.256 cliques.
- * MEDX (01/09 a 13/09): TikTok 1.000 / 68.966 impressões ·
- * YouTube 1.312,50 / 7.292 views (não há Google em MEDX).
+ * MEDX (01/09 a 13/09): TikTok 2.242,54 / 154.658 impressões ·
+ * YouTube 69,96 / 389 views (não há Google em MEDX). Plano revisado: parte da
+ * verba do YouTube foi para o TikTok, com o mesmo total (R$ 2.312,50) e os
+ * mesmos custos-alvo (CPM R$ 14,50 e CPV R$ 0,18).
  */
 export const GOALS: GoalsConfig = {
   normal: {
@@ -45,8 +47,8 @@ export const GOALS: GoalsConfig = {
     periodStart: "2026-09-01",
     periodEnd: "2026-09-13",
     platforms: {
-      tiktok: { investment: 1000, metric: "impressions", target: 68966 },
-      youtube: { investment: 1312.5, metric: "views", target: 7292 },
+      tiktok: { investment: 2242.54, metric: "impressions", target: 154658 },
+      youtube: { investment: 69.96, metric: "views", target: 389 },
     },
   },
 };
