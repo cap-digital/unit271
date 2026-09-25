@@ -63,7 +63,7 @@ export default function CreativesPage() {
       label: c.group.title.length > 30 ? `${c.group.title.slice(0, 28)}…` : c.group.title,
       value: metricValue(effectiveSort, c.totals),
       color: PLATFORM_COLOR[c.group.platform],
-      hint: `${PLATFORM_LABEL[c.group.platform]} · ${c.group.ad}`,
+      hint: [PLATFORM_LABEL[c.group.platform], ...c.group.adGroups].join(" · "),
     }));
 
   if (filteredRows.length === 0) {

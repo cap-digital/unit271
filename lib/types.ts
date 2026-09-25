@@ -17,7 +17,7 @@ export interface Row {
   campaign: string;
   adGroup: string;
   ad: string;
-  /** Chave estável para agrupar linhas do mesmo criativo. */
+  /** Chave estável para agrupar linhas do mesmo criativo (campanha + grupo de anúncios + anúncio). */
   creativeId: string;
   /** Nome do criativo — o nome do anúncio em todas as plataformas. */
   creativeTitle: string;

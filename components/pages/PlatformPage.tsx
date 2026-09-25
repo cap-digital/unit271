@@ -55,7 +55,7 @@ interface CreativeRow {
 
 /** Linha de apoio do criativo: evita repetir o título e lista todos os grupos de anúncios. */
 export function creativeSubtitle(g: CreativeGroup): string {
-  return [g.title === g.ad ? null : g.ad, ...g.adGroups].filter(Boolean).join(" · ");
+  return [g.title === g.ad || g.segment ? null : g.ad, ...g.adGroups].filter(Boolean).join(" · ");
 }
 
 export function PlatformPage({ platform }: { platform: Platform }) {
@@ -174,7 +174,7 @@ export function PlatformPage({ platform }: { platform: Platform }) {
   for (const k of CREATIVE_TABLE_KEYS[platform]) creativeFooter[k] = fmtValue(metricValue(k, totals), METRICS[k].format);
 
   const breakdownData = [...creatives]
-    .map((c) => ({ label: c.group.title.length > 34 ? `${c.group.title.slice(0, 32)}…` : c.group.title, value: metricValue(breakdownMetric, c.totals), hint: c.group.ad }))
+    .map((c) => ({ label: c.group.title.length > 34 ? `${c.group.title.slice(0, 32)}…` : c.group.title, value: metricValue(breakdownMetric, c.totals), hint: c.group.adGroups.join(" · ") || c.group.ad }))
     .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
 
   const hasRetention = !!(retention && retention.series.length > 0);

@@ -83,7 +83,8 @@ function basePreview(platform: Platform, url: string | null): Preview {
       vertical: platform === "tiktok",
     };
   }
-  if (url && /^https?:\/\//.test(url)) {
+  // Imagem da própria aplicação (public/) ou URL externa.
+  if (url && (/^https?:\/\//.test(url) || url.startsWith("/"))) {
     return { kind: "image", thumbUrl: url, thumbCandidates: [url], embedUrl: null, openUrl: null, vertical: platform === "tiktok" };
   }
   return { kind: "none", thumbUrl: null, thumbCandidates: [], embedUrl: null, openUrl: null, vertical: platform === "tiktok" };
@@ -92,8 +93,11 @@ function basePreview(platform: Platform, url: string | null): Preview {
 export interface CreativeGroup {
   id: string;
   platform: Platform;
+  /** Nome exibido: o do anúncio, acrescido do conjunto quando o mesmo nome roda em mais de um. */
   title: string;
   ad: string;
+  /** Campanha e/ou conjunto que diferenciam este criativo de outro com o mesmo nome (null quando o nome é único). */
+  segment: string | null;
   /** Primeiro grupo de anúncios encontrado (compatibilidade). */
   adGroup: string;
   /** Todos os grupos em que o anúncio rodou — o mesmo criativo pode estar em vários. */
@@ -119,12 +123,13 @@ export function groupCreatives(rows: Row[]): CreativeGroup[] {
         platform: r.platform,
         title: r.creativeTitle,
         ad: r.ad,
+        segment: null,
         adGroup: r.adGroup,
         adGroups: [],
         campaign: r.campaign,
         isMedx: r.isMedx,
         url: null,
-        fallbackUrl: creativeFallbackUrl(r.platform, r.ad),
+        fallbackUrl: creativeFallbackUrl(r.platform, r.ad, r.isMedx),
         rows: [],
       };
       map.set(r.creativeId, g);
@@ -138,5 +143,48 @@ export function groupCreatives(rows: Row[]): CreativeGroup[] {
     }
   }
   for (const g of map.values()) g.adGroups = Array.from(groupsSeen.get(g.id) ?? []);
-  return Array.from(map.values());
+  const groups = Array.from(map.values());
+  disambiguate(groups);
+  return groups;
+}
+
+/** "[TIKTOK] MEDX [PI 45122]" → ["TIKTOK", "MEDX", "PI 45122"]: trechos entre colchetes e palavras soltas. */
+function nameTokens(name: string): string[] {
+  return (name.match(/\[[^\]]*\]|[^\s[\]]+/g) ?? []).map((t) => t.replace(/^\[|\]$/g, "").trim()).filter(Boolean);
+}
+
+/**
+ * Para cada nome, os trechos que não se repetem em todos os outros — o que de
+ * fato diferencia um do outro. Ex.: campanhas "[TIKTOK] MEDX [PI…]" e
+ * "[TIKTOK] [PI…]" → "MEDX" e "". Nomes iguais devolvem "".
+ */
+function distinctiveParts(names: string[]): string[] {
+  const tokens = names.map(nameTokens);
+  const common = tokens.reduce((acc, t) => acc.filter((x) => t.includes(x)));
+  return tokens.map((t) => t.filter((x) => !common.includes(x)).join(" "));
+}
+
+/**
+ * O mesmo nome de anúncio pode rodar em campanhas ou conjuntos diferentes
+ * (ex.: YouTube em [INT. MEDICINA…] e [OPEN]). Cada combinação é um criativo à
+ * parte; aqui o título ganha o que os diferencia para que cards, tabelas e
+ * gráficos não repitam nomes.
+ */
+function disambiguate(groups: CreativeGroup[]): void {
+  const byName = new Map<string, CreativeGroup[]>();
+  for (const g of groups) {
+    const key = `${g.platform}|${g.title}`;
+    byName.set(key, [...(byName.get(key) ?? []), g]);
+  }
+  for (const same of byName.values()) {
+    if (same.length < 2) continue;
+    const campaigns = distinctiveParts(same.map((g) => g.campaign));
+    const adGroups = distinctiveParts(same.map((g) => g.adGroup));
+    same.forEach((g, i) => {
+      // a campanha sem trecho próprio é a regular (ex.: a 27.1 frente à MEDX)
+      const campaign = campaigns.some(Boolean) ? campaigns[i] || (g.isMedx ? "MEDX" : "27.1") : "";
+      g.segment = [campaign, adGroups[i]].filter(Boolean).join(" · ") || g.adGroup || g.campaign;
+      g.title = `${g.title} · ${g.segment}`;
+    });
+  }
 }
