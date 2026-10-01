@@ -21,6 +21,11 @@ const OVERRIDES: Partial<Record<Platform, Partial<Record<Campaign, Record<string
       // Sem link do Drive: imagens enviadas pelo time, servidas de public/creatives.
       "[AD] 01": "/creatives/tiktok-ad-01.png",
       "[AD] 02": "/creatives/tiktok-ad-02.png",
+      "[AD] 05": "/creatives/tiktok-ad-05.png",
+      "[AD] 06": "/creatives/tiktok-ad-06.png",
+      "[AD] 07": "/creatives/tiktok-ad-07.png",
+      "[AD] 08": "/creatives/tiktok-ad-08.png",
+      "[AD] 09": "/creatives/tiktok-ad-09.png",
     },
     medx: {
       "[AD] DIGENAL 1": "https://drive.google.com/file/d/1e-YvWOdWKIsHvS9FxbLq9m4xWUF0lkh0/view?usp=sharing",
