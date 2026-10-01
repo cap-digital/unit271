@@ -21,6 +21,7 @@ const OVERRIDES: Partial<Record<Platform, Partial<Record<Campaign, Record<string
       // Sem link do Drive: imagens enviadas pelo time, servidas de public/creatives.
       "[AD] 01": "/creatives/tiktok-ad-01.png",
       "[AD] 02": "/creatives/tiktok-ad-02.png",
+      "[AD] 03 - ULTIMA SEMANA": "/creatives/tiktok-ad-03-ultima-semana.png",
       "[AD] 05": "/creatives/tiktok-ad-05.png",
       "[AD] 06": "/creatives/tiktok-ad-06.png",
       "[AD] 07": "/creatives/tiktok-ad-07.png",
