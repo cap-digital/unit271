@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 export interface Column<T> {
   key: string;
@@ -38,6 +38,11 @@ function cmp(a: number | string | null, b: number | string | null): number {
 
 function isEmpty(v: number | string | null | undefined): boolean {
   return v === null || v === undefined || (typeof v === "number" && !Number.isFinite(v));
+}
+
+/** Altura da linha de preenchimento, descontada na medida do conteúdo. */
+function fillerHeight(table: HTMLTableElement): number {
+  return table.querySelector<HTMLElement>("tr[data-filler]")?.offsetHeight ?? 0;
 }
 
 /** Tabela ordenável por clique no cabeçalho, com scroll horizontal e vertical dentro do card. */
@@ -77,10 +82,35 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, footer, empty
 
   const py = dense ? "py-1.5" : "py-2";
 
+  // A área rolável tem uma altura natural (o menor entre o conteúdo e o limite)
+  // e cresce junto quando a grade estica o card, para o total ficar no fim do
+  // card em vez de no meio. "O menor entre o conteúdo e o limite" não se escreve
+  // só com CSS, por isso o conteúdo é medido.
+  //  - sem maxHeight: limite de ~26vh;
+  //  - maxHeight="none" (card que preenche a grade): no desktop quem define a
+  //    altura é a grade, então a tabela pede só 130px e rola dentro do espaço
+  //    que receber; empilhado no mobile, volta ao limite de ~26vh;
+  //  - outro maxHeight: altura máxima fixa, sem crescer.
+  const sized = maxHeight === undefined || maxHeight === "none";
+  const tableRef = useRef<HTMLTableElement>(null);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = tableRef.current;
+    if (!sized || !el) return;
+    const ro = new ResizeObserver(() => setContentHeight(el.scrollHeight - fillerHeight(el)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [sized]);
+
+  const scrollClass = sized
+    ? `min-h-0 flex-[1_1_0px] [--table-cap:max(130px,25vh)] sm:[--table-cap:max(130px,26vh)] ${maxHeight === "none" ? "lg:[--table-cap:130px]" : ""}`
+    : "";
+  const scrollStyle = !sized ? { maxHeight } : contentHeight === null ? undefined : { minHeight: `min(${contentHeight}px, var(--table-cap))` };
+
   return (
-    <div className="-mx-3.5 min-h-0 flex-1 sm:-mx-4">
-      <div className={`scroll-x overflow-y-auto ${maxHeight ? "" : "max-h-[25vh] min-h-[130px] sm:max-h-[26vh]"}`} style={maxHeight ? { maxHeight } : undefined}>
-        <table className="w-full min-w-[560px] border-separate border-spacing-0 text-[12.5px]">
+    <div className="-mx-3.5 flex min-h-0 flex-1 flex-col sm:-mx-4">
+      <div className={`scroll-x overflow-y-auto ${scrollClass}`} style={scrollStyle}>
+        <table ref={tableRef} className="h-full w-full min-w-[560px] border-separate border-spacing-0 text-[12.5px]">
           <thead>
             <tr>
               {columns.map((c, i) => {
@@ -127,6 +157,12 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, footer, empty
                 ))}
               </tr>
             ))}
+            {/* absorve a sobra de altura quando o card é maior que as linhas, para o total ficar no fim */}
+            {visible.length > 0 && (
+              <tr aria-hidden data-filler className="h-full">
+                <td colSpan={columns.length} className="p-0" />
+              </tr>
+            )}
           </tbody>
           {footer && visible.length > 0 && (
             <tfoot>
