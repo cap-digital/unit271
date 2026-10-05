@@ -25,6 +25,16 @@ function str(v: unknown): string {
   return typeof v === "string" ? v.trim() : v == null ? "" : String(v);
 }
 
+/**
+ * Primeiro campo presente entre os nomes aceitos. A API já mandou as colunas
+ * com rótulos ("Campaign Name", "Date (Segment)") e passou a mandar em
+ * snake_case ("campaign", "date"); os dois formatos são lidos.
+ */
+function pick(r: Raw, ...keys: string[]): unknown {
+  for (const k of keys) if (r[k] !== undefined) return r[k];
+  return undefined;
+}
+
 /** "2026-08-31T03:00:00.000Z" → "2026-08-31" (a API envia meia-noite de Brasília). */
 export function toISODate(v: unknown): string {
   const s = str(v);
@@ -66,14 +76,14 @@ function slug(s: string): string {
 
 function normalizeGoogle(rows: Raw[]): Row[] {
   return rows.map((r, i) => {
-    const campaign = str(r["Campaign Name"]);
-    const ad = str(r["Ad Name"]) || "Anúncio";
-    const adGroup = str(r["Ad Group Name"]);
-    const impressions = num(r["Impressions"]);
+    const campaign = str(pick(r, "campaign", "Campaign Name"));
+    const ad = str(pick(r, "ad_name", "Ad Name")) || "Anúncio";
+    const adGroup = str(pick(r, "ad_group_name", "Ad Group Name"));
+    const impressions = num(pick(r, "impressions", "Impressions"));
     return {
       id: `g-${i}`,
       platform: "google",
-      date: toISODate(r["Date (Segment)"] ?? r["Date"]),
+      date: toISODate(pick(r, "date", "Date (Segment)", "Date")),
       campaign,
       adGroup,
       ad,
@@ -83,8 +93,8 @@ function normalizeGoogle(rows: Raw[]): Row[] {
       isMedx: isMedxCampaign(campaign),
       investment: num(r["Investimento"]),
       impressions,
-      clicks: num(r["Clicks"]),
-      engagements: numOrNull(r["Engagements"]) ?? 0,
+      clicks: num(pick(r, "clicks", "Clicks")),
+      engagements: numOrNull(pick(r, "engagements", "Engagements")) ?? 0,
       views: null,
       views6s: null,
       p25: null,
@@ -99,15 +109,15 @@ function normalizeGoogle(rows: Raw[]): Row[] {
 
 function normalizeYouTube(rows: Raw[]): Row[] {
   return rows.map((r, i) => {
-    const campaign = str(r["Campaign Name"]);
-    const ad = str(r["Ad Name"]) || "Anúncio";
-    const adGroup = str(r["Ad Group Name"]);
+    const campaign = str(pick(r, "campaign", "Campaign Name"));
+    const ad = str(pick(r, "ad_name", "Ad Name")) || "Anúncio";
+    const adGroup = str(pick(r, "ad_group_name", "Ad Group Name"));
     const url = str(r["URL Video"]) || null;
-    const impressions = num(r["Impressions"]);
+    const impressions = num(pick(r, "impressions", "Impressions"));
     return {
       id: `y-${i}`,
       platform: "youtube",
-      date: toISODate(r["Date (Segment)"] ?? r["Date"]),
+      date: toISODate(pick(r, "date", "Date (Segment)", "Date")),
       campaign,
       adGroup,
       ad,
@@ -117,14 +127,14 @@ function normalizeYouTube(rows: Raw[]): Row[] {
       isMedx: isMedxCampaign(campaign),
       investment: num(r["Investimento"]),
       impressions,
-      clicks: num(r["Clicks"]),
-      engagements: numOrNull(r["Engagements"]) ?? 0,
-      views: num(r["Video Trueview Views"]),
+      clicks: num(pick(r, "clicks", "Clicks")),
+      engagements: numOrNull(pick(r, "engagements", "Engagements")) ?? 0,
+      views: num(pick(r, "video_trueview_views", "Video Trueview Views")),
       views6s: null,
-      p25: quartileCount(r["Video Quartile P25 Rate"], impressions) ?? 0,
-      p50: quartileCount(r["Video Quartile P50 Rate"], impressions) ?? 0,
-      p75: quartileCount(r["Video Quartile P75 Rate"], impressions) ?? 0,
-      p100: quartileCount(r["Video Quartile P100 Rate"], impressions) ?? 0,
+      p25: quartileCount(pick(r, "video_quartile25_rate", "Video Quartile P25 Rate"), impressions) ?? 0,
+      p50: quartileCount(pick(r, "video_quartile50_rate", "Video Quartile P50 Rate"), impressions) ?? 0,
+      p75: quartileCount(pick(r, "video_quartile75_rate", "Video Quartile P75 Rate"), impressions) ?? 0,
+      p100: quartileCount(pick(r, "video_quartile100_rate", "Video Quartile P100 Rate"), impressions) ?? 0,
       age: null,
       gender: null,
     };
@@ -163,32 +173,32 @@ export function genderLabel(code: string | null): string {
 
 function normalizeTikTok(rows: Raw[]): Row[] {
   return rows.map((r, i) => {
-    const campaign = str(r["Campaign Name"]);
-    const ad = str(r["Ad Name"]) || "Anúncio";
-    const adGroup = str(r["Adgroup Name"] ?? r["Ad Group Name"]);
+    const campaign = str(pick(r, "campaign", "Campaign Name"));
+    const ad = str(pick(r, "ad_name", "Ad Name")) || "Anúncio";
+    const adGroup = str(pick(r, "ad_group_name", "Adgroup Name", "Ad Group Name"));
     return {
       id: `t-${i}`,
       platform: "tiktok",
-      date: toISODate(r["Date"] ?? r["Date (Segment)"]),
+      date: toISODate(pick(r, "date", "Date", "Date (Segment)")),
       campaign,
       adGroup,
       ad,
       creativeId: `tiktok:${slug(campaign)}:${slug(adGroup)}:${slug(ad)}`,
       creativeTitle: ad,
-      creativeUrl: secureUrl(str(r["Video Thumbnail URL"]) || null),
+      creativeUrl: secureUrl(str(pick(r, "video_thumbnail_url", "Video Thumbnail URL")) || null),
       isMedx: isMedxCampaign(campaign),
       investment: num(r["Investimento"]),
-      impressions: num(r["Impressions"]),
-      clicks: num(r["Clicks"]),
+      impressions: num(pick(r, "impressions", "Impressions")),
+      clicks: num(pick(r, "clicks", "Clicks")),
       engagements: null,
-      views: num(r["2-Second Video Views"]),
-      views6s: num(r["6-Second Video Views"]),
-      p25: num(r["Video Views at 25 Percent"]),
-      p50: num(r["Video Views at 50 Percent"]),
-      p75: num(r["Video Views at 75 Percent"]),
-      p100: num(r["Video Views at 100 Percent"]),
-      age: str(r["Age (Audience Dimension)"]) || null,
-      gender: str(r["Gender (Audience Dimension)"]) || null,
+      views: num(pick(r, "play_duration_2s", "2-Second Video Views")),
+      views6s: num(pick(r, "play_duration_6s", "6-Second Video Views")),
+      p25: num(pick(r, "play_first_quartile", "Video Views at 25 Percent")),
+      p50: num(pick(r, "play_midpoint", "Video Views at 50 Percent")),
+      p75: num(pick(r, "play_third_quartile", "Video Views at 75 Percent")),
+      p100: num(pick(r, "play_over", "Video Views at 100 Percent")),
+      age: str(pick(r, "age", "Age (Audience Dimension)")) || null,
+      gender: str(pick(r, "gender", "Gender (Audience Dimension)")) || null,
     };
   });
 }
@@ -196,18 +206,18 @@ function normalizeTikTok(rows: Raw[]): Row[] {
 /** Praças (Geo Target City) — só Google e YouTube reportam essa dimensão. */
 function normalizePlaces(rows: Raw[], platform: PlacePlatform): PlaceRow[] {
   return rows.map((r, i) => {
-    const campaign = str(r["Campaign Name"]);
+    const campaign = str(pick(r, "campaign", "Campaign Name"));
     return {
       id: `p-${platform}-${i}`,
       platform,
-      date: toISODate(r["Date (Segment)"] ?? r["Date"]),
+      date: toISODate(pick(r, "date", "Date (Segment)", "Date")),
       campaign,
-      city: str(r["Geo Target City (Segment)"]) || "Não informada",
+      city: str(pick(r, "city", "Geo Target City (Segment)")) || "Não informada",
       isMedx: isMedxCampaign(campaign),
       investment: num(r["Investimento"]),
-      impressions: num(r["Impressions"]),
-      clicks: num(r["Clicks"]),
-      views: platform === "youtube" ? num(r["Video Trueview Views"]) : null,
+      impressions: num(pick(r, "impressions", "Impressions")),
+      clicks: num(pick(r, "clicks", "Clicks")),
+      views: platform === "youtube" ? num(pick(r, "video_trueview_views", "Video Trueview Views")) : null,
     };
   });
 }
