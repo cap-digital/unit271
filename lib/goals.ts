@@ -1,5 +1,5 @@
 import type { MetricKey } from "./metrics";
-import type { Platform } from "./types";
+import type { Platform, Row } from "./types";
 
 export type GoalMetric = Extract<MetricKey, "impressions" | "views" | "clicks">;
 
@@ -60,6 +60,29 @@ export const GOALS: GoalsConfig = {
  */
 export function goalInvestment(actual: number, target: number): number {
   return target > 0 && actual >= target - 1 ? target : actual;
+}
+
+/**
+ * Reescala o investimento das linhas de cada plataforma com meta para que o
+ * total da campanha some exatamente a meta quando `goalInvestment` a considera
+ * atingida. Assim todas as telas (visão geral, plataformas, criativos, praças)
+ * mostram o mesmo valor que a página de metas; a diferença por linha é de
+ * centavos.
+ */
+export function alignInvestmentToGoals(rows: Row[]): Row[] {
+  const factors = new Map<string, number>();
+  for (const [mode, goals] of [["medx", GOALS.medx], ["normal", GOALS.normal]] as const) {
+    for (const [platform, goal] of Object.entries(goals.platforms)) {
+      const key = `${mode}|${platform}`;
+      const total = rows.reduce((a, r) => (`${r.isMedx ? "medx" : "normal"}|${r.platform}` === key ? a + r.investment : a), 0);
+      if (total > 0 && goalInvestment(total, goal.investment) !== total) factors.set(key, goal.investment / total);
+    }
+  }
+  if (factors.size === 0) return rows;
+  return rows.map((r) => {
+    const f = factors.get(`${r.isMedx ? "medx" : "normal"}|${r.platform}`);
+    return f === undefined ? r : { ...r, investment: r.investment * f };
+  });
 }
 
 /** Custo unitário implícito na meta (CPM/CPV/CPC alvo). */

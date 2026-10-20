@@ -1,3 +1,4 @@
+import { alignInvestmentToGoals } from "./goals";
 import { reconcilePlaces } from "./places";
 import type { Dataset, PlacePlatform, Platform, PlaceRow, RawPayload, Row } from "./types";
 
@@ -223,11 +224,11 @@ function normalizePlaces(rows: Raw[], platform: PlacePlatform): PlaceRow[] {
 }
 
 export function normalizePayload(payload: RawPayload, fetchedAt: string): Dataset {
-  const rows: Row[] = [
+  const rows: Row[] = alignInvestmentToGoals([
     ...normalizeGoogle(Array.isArray(payload.google) ? payload.google : []),
     ...normalizeYouTube(Array.isArray(payload.youtube) ? payload.youtube : []),
     ...normalizeTikTok(Array.isArray(payload.tiktok) ? payload.tiktok : []),
-  ].filter((r) => r.date !== "");
+  ].filter((r) => r.date !== ""));
   const places: PlaceRow[] = [
     ...normalizePlaces(Array.isArray(payload.pracasgoogle) ? payload.pracasgoogle : [], "google"),
     ...normalizePlaces(Array.isArray(payload.pracasyoutube) ? payload.pracasyoutube : [], "youtube"),
