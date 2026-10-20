@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { diffDays, fmtDateBR } from "@/lib/dates";
 import { fmtCurrency, fmtInt, fmtPct } from "@/lib/format";
-import { impliedUnitCost } from "@/lib/goals";
+import { goalInvestment, impliedUnitCost } from "@/lib/goals";
 import { aggregate, METRICS, metricValue, type Totals } from "@/lib/metrics";
 import { PLATFORM_LABEL, type Platform } from "@/lib/types";
 import { useDashboard } from "@/store/DashboardContext";
@@ -53,6 +53,7 @@ export default function GoalsPage() {
         const kpiActual = metricValue(goal.metric, totals) ?? 0;
         const unit = impliedUnitCost(goal);
         const pace = pacing(kpiActual, goal.target, elapsedDays, totalDays, completedDays);
+        const invActual = goalInvestment(totals.investment, goal.investment);
         return {
           platform: p,
           totals,
@@ -60,9 +61,9 @@ export default function GoalsPage() {
           kpiActual,
           kpiTarget: goal.target,
           kpiPct: goal.target > 0 ? kpiActual / goal.target : 0,
-          invActual: totals.investment,
+          invActual,
           invTarget: goal.investment,
-          invPct: goal.investment > 0 ? totals.investment / goal.investment : 0,
+          invPct: goal.investment > 0 ? invActual / goal.investment : 0,
           unitLabel: unit.label,
           unitTarget: unit.value,
           unitActual: metricValue(unit.key, totals),

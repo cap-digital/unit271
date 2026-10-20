@@ -53,6 +53,15 @@ export const GOALS: GoalsConfig = {
   },
 };
 
+/**
+ * Investimento exibido contra a meta: o que passar da verba contratada (ou
+ * ficar só centavos abaixo dela) aparece como o valor exato da meta, para o
+ * cliente ver R$ 31.500,00 e não R$ 31.499,99 ou R$ 31.500,03.
+ */
+export function goalInvestment(actual: number, target: number): number {
+  return target > 0 && actual >= target - 1 ? target : actual;
+}
+
 /** Custo unitário implícito na meta (CPM/CPV/CPC alvo). */
 export function impliedUnitCost(goal: PlatformGoal): { label: string; value: number | null; key: MetricKey } {
   if (goal.target <= 0) return { label: unitLabel(goal.metric), value: null, key: unitKey(goal.metric) };

@@ -3,7 +3,7 @@
 import { CheckCircle2, CircleAlert, CircleDashed, Gauge } from "lucide-react";
 import { diffDays } from "@/lib/dates";
 import { fmtCurrency, fmtInt, fmtPct, fmtValue } from "@/lib/format";
-import { impliedUnitCost, type PlatformGoal } from "@/lib/goals";
+import { goalInvestment, impliedUnitCost, type PlatformGoal } from "@/lib/goals";
 import { METRICS, metricValue, type Totals } from "@/lib/metrics";
 import { PLATFORM_LABEL, type Platform } from "@/lib/types";
 import { PlatformBadge } from "@/components/ui/Badge";
@@ -123,7 +123,8 @@ export function GoalCard({ platform, goal, totals, periodStart, periodEnd, today
   const metricDef = METRICS[goal.metric];
   const actualMetric = metricValue(goal.metric, totals) ?? 0;
 
-  const invPace = pacing(totals.investment, goal.investment, elapsedDays, totalDays, completedDays);
+  const investment = goalInvestment(totals.investment, goal.investment);
+  const invPace = pacing(investment, goal.investment, elapsedDays, totalDays, completedDays);
   const kpiPace = pacing(actualMetric, goal.target, elapsedDays, totalDays, completedDays);
   const unit = impliedUnitCost(goal);
   const unitActual = metricValue(unit.key, totals);
@@ -156,7 +157,7 @@ export function GoalCard({ platform, goal, totals, periodStart, periodEnd, today
         />
         <Meter
           label="Investimento"
-          actualText={fmtCurrency(totals.investment, { compact: true })}
+          actualText={fmtCurrency(investment, { compact: true })}
           targetText={fmtCurrency(goal.investment, { compact: true })}
           pace={invPace}
           projectedText={invPace.projected !== null ? fmtCurrency(invPace.projected, { compact: true }) : null}
